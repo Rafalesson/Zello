@@ -108,7 +108,7 @@ const allTemplates = {
                 profissionais na presente data, necessitando de
                 <strong>{{durationInDays}} ({{durationInWords}}) dia(s)</strong> de
                 afastamento de suas atividades laborais/outras, a partir de
-                <strong>{{startDate}}</strong>.
+                <strong>01/06/2026</strong>.
               </p>
               <p><strong>Finalidade:</strong> {{purpose}}</p>
               <p><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>
@@ -116,7 +116,7 @@ const allTemplates = {
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em {{issueDate}}</p>
+              <p>Emitido em 01/06/2026 às 16:23:49</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
@@ -250,14 +250,14 @@ const allTemplates = {
               <strong>{{patientCPF}}</strong>, encontra-se sob meus cuidados 
               profissionais, sendo-lhe necessário o afastamento de suas atividades 
               habituais por um período de <strong>{{durationInDays}} 
-              ({{durationInWords}})</strong> dia(s), a contar de <strong>29/05/2026</strong>.
+              ({{durationInWords}})</strong> dia(s), a contar de <strong>{{startDate}}</strong>.
             </p>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 29/05/2026 às 09:22:35</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
