@@ -48,16 +48,16 @@ export function Modal({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className={`w-full ${maxWidth} transform overflow-hidden rounded-2xl bg-gray-100 p-6 text-left align-middle shadow-xl transition-all`}>
+                <Dialog.Panel className={`w-full ${maxWidth} transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all`}>
                   <Dialog.Title as={Fragment}>
-                    <div className="flex items-center justify-between text-lg font-medium leading-6 text-gray-900">
+                    <div className="flex items-center justify-between text-lg font-medium leading-6 text-gray-900 dark:text-slate-100">
                       <h3>{title}</h3>
                       <button
                         type="button"
-                        className="p-2 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                         onClick={onClose}
                       >
-                        <X size={20} />
+                        <X size={20} className="text-gray-500 dark:text-slate-400" />
                       </button>
                     </div>
                   </Dialog.Title>

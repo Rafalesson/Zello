@@ -90,6 +90,15 @@ body {
   line-height: 1.6;
 }
 
+button, 
+a, 
+[role="button"], 
+input[type="button"], 
+input[type="submit"], 
+input[type="reset"] {
+  cursor: pointer;
+}
+
 [data-reveal] {
   opacity: 0;
   transform: translateY(24px);
