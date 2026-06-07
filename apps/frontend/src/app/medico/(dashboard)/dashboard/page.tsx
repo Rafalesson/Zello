@@ -154,24 +154,24 @@ export default function DashboardPage() {
         </div>
         
         {nextAppointment ? (
-          <div className="lg:col-span-2 p-6 bg-gradient-to-r from-teal-500 to-teal-600 dark:from-slate-800 dark:to-slate-800 dark:border dark:border-teal-500/30 rounded-lg shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden">
-             <div className="absolute -top-4 -right-4 p-6 opacity-10 dark:opacity-5 dark:text-teal-500 pointer-events-none">
+          <div className="lg:col-span-2 p-6 bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-900/80 dark:to-teal-800/60 dark:border dark:border-teal-500/40 dark:shadow-[0_0_25px_rgba(20,184,166,0.15)] rounded-lg shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden">
+             <div className="absolute -top-4 -right-4 p-6 opacity-10 dark:opacity-10 dark:text-teal-400 pointer-events-none">
                <Calendar className="w-48 h-48" />
              </div>
              <div className="relative z-10">
-               <h3 className="text-teal-100 dark:text-teal-400 font-medium mb-1">Próxima Consulta</h3>
-               <h2 className="text-2xl font-bold mb-2 dark:text-slate-100">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
-               <div className="flex items-center gap-2 text-teal-50 dark:text-slate-300">
+               <h3 className="text-teal-100 dark:text-teal-300 font-medium mb-1">Próxima Consulta</h3>
+               <h2 className="text-2xl font-bold mb-2 dark:text-white">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
+               <div className="flex items-center gap-2 text-teal-50 dark:text-teal-50/90">
                  <Clock className="w-4 h-4" />
                  <span>{formatAppointmentDate(nextAppointment.date)}</span>
                </div>
                <div className="mt-5 flex gap-3">
-                 <button className="px-4 py-2 bg-white dark:bg-teal-600 text-teal-700 dark:text-white font-semibold rounded-md shadow-sm hover:bg-teal-50 dark:hover:bg-teal-500 transition-colors">
+                 <button className="px-4 py-2 bg-white dark:bg-teal-400 text-teal-700 dark:text-teal-950 font-bold rounded-md shadow-sm hover:bg-teal-50 dark:hover:bg-teal-300 dark:shadow-[0_0_15px_rgba(45,212,191,0.3)] transition-all">
                    Iniciar Atendimento
                  </button>
                  <button 
                    onClick={() => handleOpenDetails(nextAppointment)}
-                   className="px-4 py-2 bg-teal-700/50 dark:bg-slate-700/50 hover:bg-teal-700 dark:hover:bg-slate-600 border border-teal-400/30 dark:border-slate-600 text-white dark:text-slate-200 font-semibold rounded-md transition-colors"
+                   className="px-4 py-2 bg-teal-700/50 dark:bg-teal-900/40 hover:bg-teal-700 dark:hover:bg-teal-800/60 border border-teal-400/30 dark:border-teal-500/40 text-white dark:text-teal-100 font-semibold rounded-md transition-colors"
                  >
                    Detalhes
                  </button>
