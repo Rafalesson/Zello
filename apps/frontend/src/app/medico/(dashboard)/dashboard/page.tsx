@@ -45,10 +45,7 @@ const formatAppointmentDate = (dateString: string) => {
   }
 };
 
-const fetchPatientCount = async (): Promise<{ count: number }> => {
-  const { data } = await api.get('/patients/count');
-  return data;
-};
+
 
 const fetchDoctorAppointments = async (): Promise<AppointmentApi[]> => {
   const { data } = await api.get<AppointmentApi[]>('/appointments/doctor');
@@ -80,10 +77,7 @@ const AppointmentsEmptyState = () => (
 );
 
 export default function DashboardPage() {
-  const { data: patientData, isLoading: isLoadingCount } = useQuery({
-    queryKey: ['patientCount'],
-    queryFn: fetchPatientCount,
-  });
+
 
   const {
     data: appointments,
@@ -143,14 +137,7 @@ export default function DashboardPage() {
           )}
           <p className="text-gray-500 dark:text-slate-400 mt-2">Consultas Hoje</p>
         </div>
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full">
-          {isLoadingCount ? (
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 dark:border-slate-600 border-t-teal-500" />
-          ) : (
-            <h3 className="text-4xl font-bold text-gray-800 dark:text-slate-100">{patientData?.count ?? 0}</h3>
-          )}
-          <p className="text-gray-500 dark:text-slate-400 mt-2">Total de Pacientes</p>
-        </div>
+        {/* Placeholder para uma futura métrica mais acionável */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
