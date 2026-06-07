@@ -279,14 +279,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Dados Demográficos */}
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
                 <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Idade</span>
                 <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate">32 anos</span>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
                 <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">CPF</span>
-                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 whitespace-nowrap tracking-tight">123.456.789-00</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate">123.456.789-00</span>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
                 <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Sexo</span>
