@@ -21,10 +21,12 @@ type AppointmentApi = {
   } | null;
 };
 
-const statusBadgeStyles = {
+const statusBadgeStyles: Record<string, string> = {
   AGENDADA: 'bg-amber-50 text-amber-700 border-amber-250 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30',
   CANCELADA: 'bg-red-50 text-red-700 border-red-250 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30',
   REALIZADA: 'bg-green-50 text-green-700 border-green-250 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30',
+  NAO_INICIADA: 'bg-gray-50 text-gray-700 border-gray-250 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+  REAGENDADA: 'bg-blue-50 text-blue-700 border-blue-250 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
 };
 
 const formatAppointmentDate = (dateString: string) => {
@@ -191,11 +193,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Próximas Consultas */}
+        {/* Lista Geral de Consultas */}
         <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col h-[520px]">
           <h2 className="text-xl font-semibold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-teal-650 dark:text-teal-400" />
-            Próximas Consultas
+            Consultas
           </h2>
 
           {isLoadingAppointments && <AppointmentsListSkeleton />}
