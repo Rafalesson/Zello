@@ -264,49 +264,76 @@ export default function DashboardPage() {
         maxWidth="max-w-md"
       >
         {selectedAppointment && (
-          <div className="space-y-4">
-             <div className="grid grid-cols-2 gap-4">
-               <div className="col-span-2">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Paciente</h4>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{selectedAppointment.patientProfile?.name || 'N/A'}</p>
-               </div>
-               <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Idade</h4>
-                  <p className="text-sm text-gray-800 dark:text-slate-100">32 anos {/* mock */}</p>
-               </div>
-               <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">CPF</h4>
-                  <p className="text-sm text-gray-800 dark:text-slate-100">123.456.789-00 {/* mock */}</p>
-               </div>
-               <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Sexo</h4>
-                  <p className="text-sm text-gray-800 dark:text-slate-100">Não informado {/* mock */}</p>
-               </div>
-               <div className="col-span-2">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Data e Horário</h4>
-                  <p className="text-sm text-gray-800 dark:text-slate-100">{formatAppointmentDate(selectedAppointment.date)}</p>
-               </div>
-               <div className="col-span-2">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Status</h4>
-                  <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
+          <div className="flex flex-col gap-5 mt-2">
+            {/* Paciente Header */}
+            <div className="flex items-center gap-4 p-4 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30 rounded-xl">
+              <div className="w-12 h-12 bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0">
+                <User size={24} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-teal-600/80 dark:text-teal-400/80 uppercase mb-0.5">Paciente</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 leading-none">
+                  {selectedAppointment.patientProfile?.name || 'N/A'}
+                </h3>
+              </div>
+            </div>
+
+            {/* Dados Demográficos */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center">
+                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Idade</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">32 anos</span>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center">
+                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Sexo</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">Feminino</span>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center">
+                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">CPF</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">123.456.789-00</span>
+              </div>
+            </div>
+
+            {/* Informações da Consulta */}
+            <div className="p-4 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-600">
+                    <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500 dark:text-slate-400 font-medium mb-0.5">Agendamento</span>
+                    <span className="block text-sm font-bold text-gray-800 dark:text-slate-200">
+                      {formatAppointmentDate(selectedAppointment.date)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="block text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Status</span>
+                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
                     {selectedAppointment.status}
                   </span>
-               </div>
-             </div>
+                </div>
+              </div>
+            </div>
              
-             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-slate-700 flex justify-between gap-3">
+             {/* Rodapé e Ações */}
+             <div className="pt-4 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center gap-3">
                <button 
                  onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')} 
-                 className="px-4 py-2 border border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                 className="px-4 py-2 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-500 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none"
                >
                  Reagendar
                </button>
                <div className="flex gap-2">
-                 <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                 <button 
+                   onClick={() => setIsModalOpen(false)} 
+                   className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-gray-400 focus:outline-none"
+                 >
                    Fechar
                  </button>
                  {selectedAppointment.status === 'AGENDADA' && (
-                   <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors">
+                   <button className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-sm shadow-teal-600/30 transition-all focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900">
                      Iniciar Consulta
                    </button>
                  )}
