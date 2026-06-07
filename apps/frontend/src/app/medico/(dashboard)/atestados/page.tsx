@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { Search, Download, Trash2, Loader2, AlertTriangle, Eye } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { resolvePdfUrl } from '@/utils/resolvePdfUrl';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -238,9 +239,15 @@ export default function CertificateHistoryPage() {
 
   return (
     <div>
-      {/* O botão foi removido daqui */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">Histórico de Atestados</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">Atestados</h1>
+        <Link 
+          href="/medico/atestados/novo"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+        >
+          <PlusCircle className="w-5 h-5" />
+          Emitir Atestado
+        </Link>
       </div>
 
       <div className="mb-6">

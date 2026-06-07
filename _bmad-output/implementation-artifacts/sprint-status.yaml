@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-12T20:07:23-03:00
-last_updated: 2026-06-06T22:41:00-03:00
+last_updated: 2026-06-06T23:06:00-03:00
 project: ImNotMedical
 project_key: NOKEY
 tracking_system: file-system
@@ -57,8 +57,9 @@ development_status:
   2-2-doctor-search-discovery: done
   2-3-appointment-booking-with-calendar-strip: done
   2-4-booking-confirmation-notifications: done
-  2-5-doctors-appointment-dashboard: ready-for-dev
+  2-5-doctors-appointment-dashboard: done
   2-6-appointment-cancellation-flow: backlog
+  2-7-dashboard-redesign-and-document-migration: ready-for-dev
   epic-2-retrospective: optional
 
   epic-3: backlog
