@@ -5,6 +5,8 @@ import { PlusCircle, CalendarDays, Calendar, User, Clock } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthProvider';
+import { Modal } from '@/components/common/Modal';
 type PatientProfile = {
   name?: string | null;
 };
@@ -77,8 +79,14 @@ const AppointmentsEmptyState = () => (
 );
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentApi | null>(null);
 
-
+  const handleOpenDetails = (appointment: AppointmentApi) => {
+    setSelectedAppointment(appointment);
+    setIsModalOpen(true);
+  };
   const {
     data: appointments,
     isLoading: isLoadingAppointments,
@@ -117,27 +125,65 @@ export default function DashboardPage() {
     }).length;
   }, [appointments]);
 
+  const nextAppointment = useMemo(() => {
+    if (!appointments) return null;
+    return appointments.find(app => app.status === 'AGENDADA') || null;
+  }, [appointments]);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">{greeting}, Dr(a).</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">
+            {greeting}, Dr(a). {user?.doctorProfile?.name?.split(' ')[0] || ''}
+          </h1>
           <p className="text-gray-500 dark:text-slate-400 mt-1">Aqui está o resumo da sua rotina clínica hoje.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full">
           {isLoadingAppointments ? (
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 dark:border-slate-600 border-t-teal-500" />
           ) : (
-            <h3 className="text-4xl font-bold text-gray-800 dark:text-slate-100">
-              {String(todayAppointmentsCount).padStart(2, '0')}
+            <h3 className="text-5xl font-bold text-gray-800 dark:text-slate-100">
+              {todayAppointmentsCount}
             </h3>
           )}
-          <p className="text-gray-500 dark:text-slate-400 mt-2">Consultas Hoje</p>
+          <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consultas Hoje</p>
         </div>
-        {/* Placeholder para uma futura métrica mais acionável */}
+        
+        {nextAppointment ? (
+          <div className="lg:col-span-2 p-6 bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden">
+             <div className="absolute -top-4 -right-4 p-6 opacity-10 pointer-events-none">
+               <Calendar className="w-48 h-48" />
+             </div>
+             <div className="relative z-10">
+               <h3 className="text-teal-100 font-medium mb-1">Próxima Consulta</h3>
+               <h2 className="text-2xl font-bold mb-2">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
+               <div className="flex items-center gap-2 text-teal-50">
+                 <Clock className="w-4 h-4" />
+                 <span>{formatAppointmentDate(nextAppointment.date)}</span>
+               </div>
+               <div className="mt-5 flex gap-3">
+                 <button className="px-4 py-2 bg-white text-teal-700 font-semibold rounded-md shadow-sm hover:bg-teal-50 transition-colors">
+                   Iniciar Atendimento
+                 </button>
+                 <button 
+                   onClick={() => handleOpenDetails(nextAppointment)}
+                   className="px-4 py-2 bg-teal-700/50 hover:bg-teal-700 border border-teal-400/30 text-white font-semibold rounded-md transition-colors"
+                 >
+                   Detalhes
+                 </button>
+               </div>
+             </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full border border-dashed border-gray-200 dark:border-slate-700">
+             <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Agenda Livre</h3>
+             <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem próximas consultas pendentes.</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -160,7 +206,8 @@ export default function DashboardPage() {
                 appointments.map((appointment) => (
                   <div
                     key={appointment.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-150 dark:border-slate-700 hover:border-teal-500/30 dark:hover:border-teal-400/30 transition-all duration-200 shadow-sm"
+                    onClick={() => handleOpenDetails(appointment)}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-150 dark:border-slate-700 hover:border-teal-500/30 dark:hover:border-teal-400/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 cursor-pointer transition-all duration-200 shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-teal-50 dark:bg-teal-950/30 rounded-lg text-teal-600 dark:text-teal-400">
@@ -184,11 +231,6 @@ export default function DashboardPage() {
                       >
                         {appointment.status}
                       </span>
-                      {appointment.status === 'AGENDADA' && (
-                        <button className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors shadow-sm">
-                          Iniciar Consulta
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))
@@ -215,6 +257,42 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Detalhes da Consulta"
+        maxWidth="max-w-md"
+      >
+        {selectedAppointment && (
+          <div className="space-y-4">
+             <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Paciente</h4>
+                <p className="text-lg font-semibold text-gray-800 dark:text-slate-100">{selectedAppointment.patientProfile?.name || 'N/A'}</p>
+             </div>
+             <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Data e Horário</h4>
+                <p className="text-gray-800 dark:text-slate-100">{formatAppointmentDate(selectedAppointment.date)}</p>
+             </div>
+             <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Status</h4>
+                <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
+                  {selectedAppointment.status}
+                </span>
+             </div>
+             
+             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
+               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">
+                 Fechar
+               </button>
+               {selectedAppointment.status === 'AGENDADA' && (
+                 <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium">
+                   Iniciar Consulta
+                 </button>
+               )}
+             </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
