@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, type ComponentType } from 'react';
 import { ShieldCheck, Rocket, Users } from 'lucide-react';
@@ -12,15 +12,15 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    name: 'Validação Segura',
+    name: 'Segurança & Privacidade',
     description:
-      'Tecnologia antifraude que valida cada documento emitido, garantindo confiança total para médicos e pacientes.',
+      'Seus dados são protegidos com criptografia de ponta a ponta, autenticação segura e conformidade total com a LGPD.',
     icon: ShieldCheck,
   },
   {
-    name: 'Emissão Rápida e Intuitiva',
+    name: 'Documentos Digitais',
     description:
-      'Atestados e prescrições criados em poucos cliques, com layouts profissionais e envio imediato para o paciente.',
+      'Emita atestados e prescrições médicas em poucos cliques, com assinatura digital e QR Code para validação instantânea.',
     icon: Rocket,
   },
   {
@@ -36,36 +36,34 @@ export function FeaturesSection() {
   useScrollReveal(sectionRef);
 
   return (
-    <section ref={sectionRef} id="features" className="bg-white">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col justify-center px-6 py-24 sm:py-32 lg:px-8">
+    <section ref={sectionRef} id="features" className="bg-white dark:bg-slate-900 transition-colors duration-200">
+      <div className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Por que Zello?</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Clareza e segurança em cada etapa do cuidado digital
+          <span className="inline-block rounded-full bg-teal-50 dark:bg-teal-900/30 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.15em] text-teal-700 dark:text-teal-300">
+            Por que o Zello?
+          </span>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Tecnologia de ponta a favor do seu bem-estar
           </h2>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Mais do que uma plataforma, o Zello conecta pessoas com dados confiáveis e processos fluidos.
+          <p className="mt-5 text-base leading-7 text-slate-500 dark:text-slate-300">
+            Muito além de uma videochamada. O Zello oferece agendamento inteligente, prontuário integrado e emissão de documentos médicos digitais.
           </p>
         </div>
 
         <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, index) => {
-            const baseBackground = index % 2 === 0 ? 'bg-white' : 'bg-[#f9fafb]';
-
-            return (
-              <div
-                key={feature.name}
-                data-reveal
-                className={`group relative flex flex-col rounded-3xl ${baseBackground} p-8 shadow-sm ring-1 ring-slate-100 transition-all duration-200 hover:-translate-y-2 hover:shadow-xl hover:ring-blue-100`}
-              >
-                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-all duration-200 group-hover:bg-blue-600 group-hover:text-white">
-                  <feature.icon className="h-10 w-10" aria-hidden="true" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900">{feature.name}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{feature.description}</p>
+          {features.map((feature) => (
+            <div
+              key={feature.name}
+              data-reveal
+              className="group relative flex flex-col rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:ring-teal-500/20"
+            >
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 transition-all duration-300 group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-teal-600/25">
+                <feature.icon className="h-7 w-7" aria-hidden="true" />
               </div>
-            );
-          })}
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.name}</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-300">{feature.description}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

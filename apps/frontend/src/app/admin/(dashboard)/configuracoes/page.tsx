@@ -1,0 +1,21 @@
+'use client';
+
+import { Settings } from 'lucide-react';
+
+export default function ConfiguracoesPage() {
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-8">
+        <Settings className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Configurações Globais</h1>
+      </div>
+      <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center">
+        <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Painel de Controle</h2>
+        <p className="mt-2 text-slate-500 dark:text-slate-400">
+          Aqui você poderá ativar ou desativar funcionalidades globais do Zello, 
+          como Modo Manutenção, envio automático de e-mails e afins.
+        </p>
+      </div>
+    </div>
+  );
+}

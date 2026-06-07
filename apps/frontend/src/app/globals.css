@@ -1,27 +1,86 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Slate 50 */
+  --background: #f8fafc;
+  /* Slate 800 */
+  --foreground: #1e293b;
+  /* Teal 600 */
+  --primary: #0d9488;
   --header-height: 5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Slate 900 */
+    --background: #0f172a;
+    /* Slate 50 */
+    --foreground: #f8fafc;
+    /* Teal 500 */
+    --primary: #14b8a6;
   }
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+/* ─── Custom Scrollbar ─── */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9; /* slate-400 thumb, slate-100 track */
+}
+.dark * {
+  scrollbar-color: #475569 #1e293b; /* slate-600 thumb, slate-800 track */
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* slate-100 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* slate-400 */
+  border-radius: 4px;
+  border: 2px solid #f1f5f9; /* slate-100 — gives inset effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0d9488; /* teal-600 */
+}
+
+/* Dark mode — WebKit */
+.dark ::-webkit-scrollbar-track,
+.dark::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+}
+
+.dark ::-webkit-scrollbar-thumb,
+.dark::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+  border-color: #1e293b; /* slate-800 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+.dark::-webkit-scrollbar-thumb:hover {
+  background: #14b8a6; /* teal-500 */
 }
 
 body {
@@ -40,4 +99,66 @@ body {
 [data-reveal].is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Time input clock icon — white in dark mode */
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Date input calendar icon — white in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Global placeholder color — consistent across all inputs */
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8; /* slate-400 */
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b; /* slate-500 */
+}
+
+/* News Ticker / Marquee */
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-content {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
 }

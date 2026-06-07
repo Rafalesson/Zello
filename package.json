@@ -1,13 +1,14 @@
 {
-  "name": "zello-monorepo",
+  "name": "imnotmedical",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev:backend": "npm run start:dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=zello-frontend"
+    "dev:frontend": "npm run dev --workspace=@imnotmedical/frontend"
   },
   "dependencies": {
     "class-transformer": "^0.5.1",

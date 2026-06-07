@@ -24,6 +24,8 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'CRM é obrigatório para médicos.' })
   crm?: string;
   @IsOptional() @IsString() specialty?: string;
+  @IsOptional() @IsString() bio?: string;
+  @IsOptional() @IsString() profilePictureUrl?: string;
 
   // --- Campos de Paciente ---
   @ValidateIf((o) => o.role === Role.PATIENT)

@@ -6,6 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { calculateNextAvailableSlot, formatNextAvailableSlot } from 'src/utils';
 
 @Injectable()
 export class UserService {
@@ -20,6 +21,8 @@ export class UserService {
       phone,
       crm,
       specialty,
+      bio,
+      profilePictureUrl,
       cpf,
       dateOfBirth,
       sex,
@@ -68,6 +71,8 @@ export class UserService {
           name,
           crm: crm || '',
           specialty,
+          bio,
+          profilePictureUrl,
           phone,
           ...(addressData && { address: { create: addressData } }),
         },
@@ -123,6 +128,176 @@ export class UserService {
       include: {
         doctorProfile: { include: { address: true } },
         patientProfile: { include: { address: true } },
+      },
+    });
+  }
+
+  async findPublicDoctorProfile(id: number) {
+    let profile = await this.prisma.doctorProfile.findFirst({
+      where: {
+        id: id,
+        status: 'APPROVED',
+        user: { isActive: true },
+      },
+      select: {
+        id: true,
+        name: true,
+        crm: true,
+        specialty: true,
+        bio: true,
+        profilePictureUrl: true,
+        consultationPrice: true,
+        address: {
+          select: {
+            city: true,
+            state: true,
+            street: true,
+            number: true,
+            neighborhood: true,
+          },
+        },
+        availabilities: {
+          where: { isActive: true },
+          select: {
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+            slotDurationMinutes: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!profile) {
+      profile = await this.prisma.doctorProfile.findFirst({
+        where: {
+          userId: id,
+          status: 'APPROVED',
+          user: { isActive: true },
+        },
+        select: {
+          id: true,
+          name: true,
+          crm: true,
+          specialty: true,
+          bio: true,
+          profilePictureUrl: true,
+          consultationPrice: true,
+          address: {
+            select: {
+              city: true,
+              state: true,
+              street: true,
+              number: true,
+              neighborhood: true,
+            },
+          },
+          availabilities: {
+            where: { isActive: true },
+            select: {
+              dayOfWeek: true,
+              startTime: true,
+              endTime: true,
+              slotDurationMinutes: true,
+              isActive: true,
+            },
+          },
+        },
+      });
+    }
+
+    return profile;
+  }
+
+  async searchDoctors(filters: { query?: string; specialty?: string; city?: string; state?: string }) {
+    const { query, specialty, city, state } = filters;
+    const whereClause: Prisma.DoctorProfileWhereInput = {
+      status: 'APPROVED',
+      user: { isActive: true },
+    };
+
+    if (specialty) {
+      whereClause.specialty = {
+        equals: specialty,
+        mode: 'insensitive',
+      };
+    }
+
+    if (city || state) {
+      const addressFilter: Prisma.AddressWhereInput = {};
+      if (city) {
+        addressFilter.city = {
+          equals: city,
+          mode: 'insensitive',
+        };
+      }
+      if (state) {
+        addressFilter.state = {
+          equals: state,
+          mode: 'insensitive',
+        };
+      }
+      whereClause.address = addressFilter;
+    }
+
+    if (query) {
+      whereClause.OR = [
+        { name: { contains: query, mode: 'insensitive' } },
+        { bio: { contains: query, mode: 'insensitive' } },
+        { specialty: { contains: query, mode: 'insensitive' } },
+      ];
+    }
+
+    const doctors = await this.prisma.doctorProfile.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        crm: true,
+        specialty: true,
+        bio: true,
+        profilePictureUrl: true,
+        address: {
+          select: {
+            city: true,
+            state: true,
+          },
+        },
+        availabilities: {
+          where: { isActive: true },
+          select: {
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+            slotDurationMinutes: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    return doctors.map((doc) => {
+      const nextDate = calculateNextAvailableSlot(doc.availabilities);
+      return {
+        id: doc.id,
+        name: doc.name,
+        crm: doc.crm,
+        specialty: doc.specialty,
+        bio: doc.bio,
+        profilePictureUrl: doc.profilePictureUrl,
+        address: doc.address,
+        nextAvailable: formatNextAvailableSlot(nextDate),
+        nextAvailableDate: nextDate ? nextDate.toISOString() : null,
+      };
+    });
+  }
+
+  async updateDoctorProfile(userId: number, data: { consultationPrice?: number }) {
+    return this.prisma.doctorProfile.update({
+      where: { userId },
+      data: {
+        consultationPrice: data.consultationPrice,
       },
     });
   }

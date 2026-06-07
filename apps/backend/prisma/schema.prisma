@@ -20,6 +20,18 @@ enum Sex {
   OTHER
 }
 
+enum DoctorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ConsultationStatus {
+  AGENDADA
+  CANCELADA
+  REALIZADA
+}
+
 model Address {
   id              Int            @id @default(autoincrement())
   street          String
@@ -39,8 +51,10 @@ model User {
   phone                String?               @unique
   password             String
   role                 Role
+  name                 String?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+  isActive             Boolean               @default(true)
   passwordResetToken   String?               @unique
   passwordResetExpires DateTime?
   doctorProfile        DoctorProfile?
@@ -52,15 +66,37 @@ model User {
 }
 
 model DoctorProfile {
-  id        Int      @id @default(autoincrement())
-  name      String
-  crm       String   @unique
-  specialty String?
-  address   Address? @relation(fields: [addressId], references: [id])
-  addressId Int?     @unique
-  phone     String?
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int      @unique
+  id                Int            @id @default(autoincrement())
+  name              String
+  crm               String         @unique
+  specialty         String?
+  bio               String?
+  profilePictureUrl String?
+  status            DoctorStatus   @default(PENDING)
+  address           Address?       @relation(fields: [addressId], references: [id])
+  addressId         Int?           @unique
+  phone             String?
+  consultationPrice Float?
+  user              User           @relation(fields: [userId], references: [id])
+  userId            Int            @unique
+  availabilities    Availability[]
+  appointments      Appointment[]
+}
+
+model Availability {
+  id                  Int           @id @default(autoincrement())
+  dayOfWeek           Int           // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime           String        // HH:mm format
+  endTime             String        // HH:mm format
+  slotDurationMinutes Int           @default(30)
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  doctorProfile       DoctorProfile @relation(fields: [doctorProfileId], references: [id])
+  doctorProfileId     Int
+
+  @@unique([doctorProfileId, dayOfWeek, startTime])
+  @@index([doctorProfileId])
 }
 
 model PatientProfile {
@@ -74,6 +110,7 @@ model PatientProfile {
   userId      Int      @unique
   address     Address? @relation(fields: [addressId], references: [id])
   addressId   Int?     @unique
+  appointments Appointment[]
 }
 
 model MedicalCertificate {
@@ -118,5 +155,18 @@ model CidCode {
   @@index([code])
 }
 
+model Appointment {
+  id               Int                @id @default(autoincrement())
+  doctorProfile    DoctorProfile      @relation(fields: [doctorProfileId], references: [id])
+  doctorProfileId  Int
+  patientProfile   PatientProfile     @relation(fields: [patientProfileId], references: [id])
+  patientProfileId Int
+  date             DateTime
+  status           ConsultationStatus @default(AGENDADA)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-
+  @@index([doctorProfileId])
+  @@index([patientProfileId])
+  @@unique([doctorProfileId, date])
+}

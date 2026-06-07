@@ -22,6 +22,7 @@ interface DoctorProfile {
   specialty?: string;
   phone?: string;
   address?: Address;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 interface PatientProfile {
@@ -36,7 +37,7 @@ interface PatientProfile {
 interface User {
   id: string;
   email: string;
-  role: 'DOCTOR' | 'PATIENT';
+  role: 'DOCTOR' | 'PATIENT' | 'ADMIN';
   doctorProfile?: DoctorProfile;
   patientProfile?: PatientProfile;
 }
@@ -97,9 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(loggedUser);
 
       if (loggedUser.role === 'DOCTOR') {
-        router.push('/dashboard');
+        router.push('/medico/dashboard');
       } else if (loggedUser.role === 'PATIENT') {
         router.push('/paciente/dashboard');
+      } else if (loggedUser.role === 'ADMIN') {
+        router.push('/admin/dashboard');
       } else {
         router.push('/');
       }

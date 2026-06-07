@@ -1,11 +1,12 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, LogIn, LogOut, Menu, X, Info, Play, Users, Mail } from 'lucide-react';
+import { LayoutDashboard, LogIn, LogOut, Menu, X, Info, Play, Users, Mail, MessageSquare } from 'lucide-react';
 import { AuthContext } from '@/contexts/AuthProvider';
+import { ThemeToggle } from '../ThemeToggle';
 
 type ActionOptions = {
   fullWidth?: boolean;
@@ -15,15 +16,25 @@ type ActionOptions = {
 const navLinks = [
   { label: 'Por que Zello?', href: '/#features' },
   { label: 'Como Funciona', href: '/#how-it-works' },
+  { label: 'Depoimentos', href: '/#depoimentos' },
   { label: 'Sobre Nós', href: '/#about' },
   { label: 'Contato', href: '/#contato' },
 ];
 
-const navIcons = [Info, Play, Users, Mail];
+const navIcons = [Info, Play, MessageSquare, Users, Mail];
 
 export function Header() {
   const { isAuthenticated, user, signOut } = useContext(AuthContext);
   const pathname = usePathname();
+  const isLandingPage = pathname === '/';
+
+  const getLogoHref = () => {
+    if (!isAuthenticated || !user) return '/';
+    if (user.role === 'PATIENT') return '/paciente/dashboard';
+    if (user.role === 'DOCTOR') return '/medico/dashboard';
+    if (user.role === 'ADMIN') return '/admin/dashboard';
+    return '/';
+  };
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false); // keeps menu in DOM while animating out
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -40,45 +51,54 @@ export function Header() {
     const widthClass = options.fullWidth ? ' w-full justify-center' : '';
 
     if (isAuthenticated) {
-      if (user?.role === 'DOCTOR') {
-        return (
+      let dashboardUrl = '/';
+      if (user?.role === 'DOCTOR') dashboardUrl = '/medico/dashboard';
+      else if (user?.role === 'PATIENT') dashboardUrl = '/paciente/dashboard';
+      else if (user?.role === 'ADMIN') dashboardUrl = '/admin/dashboard';
+
+      return (
+        <div className={`flex items-center gap-3${options.fullWidth ? ' w-full flex-col' : ''}`}>
           <Link
-            href="/dashboard"
+            href={dashboardUrl}
             onClick={options.onAction}
-            className={`${baseActionClasses} border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white focus-visible:outline-slate-900${widthClass}`}
+            className={`${baseActionClasses} border border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-400 dark:hover:bg-slate-800 focus-visible:outline-teal-600${widthClass}`}
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
-        );
-      }
-
-      const handleSignOut = () => {
-        signOut();
-        options.onAction?.();
-      };
-
-      return (
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className={`${baseActionClasses} border border-red-600 text-red-600 hover:bg-red-600 hover:text-white focus-visible:outline-red-600${widthClass}`}
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              signOut();
+              options.onAction?.();
+            }}
+            className={`${baseActionClasses} border border-red-600 text-red-600 hover:bg-red-600 hover:text-white focus-visible:outline-red-600${widthClass}`}
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
       );
     }
 
     return (
-      <Link
-        href="/login"
-        onClick={options.onAction}
-        className={`${baseActionClasses} border border-blue-600 text-blue-600 hover:border-transparent hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 hover:text-white focus-visible:outline-blue-600${widthClass}`}
-      >
-        <LogIn className="h-4 w-4" />
-        Começar agora
-      </Link>
+      <div className={`flex items-center gap-3${options.fullWidth ? ' w-full flex-col' : ''}`}>
+        <Link
+          href="/cadastro"
+          onClick={options.onAction}
+          className={`${baseActionClasses} border border-transparent bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 focus-visible:outline-teal-600${widthClass}`}
+        >
+          Cadastre-se
+        </Link>
+        <Link
+          href="/login"
+          onClick={options.onAction}
+          className={`${baseActionClasses} border border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-400 dark:hover:bg-slate-800 focus-visible:outline-teal-600${widthClass}`}
+        >
+          <LogIn className="h-4 w-4" />
+          Acessar
+        </Link>
+      </div>
     );
   };
 
@@ -157,46 +177,57 @@ export function Header() {
   }, [isMobileMenuOpen, isMenuVisible]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm">
-  <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 transition-all duration-200 sm:px-6 lg:px-8 lg:py-5">
+    <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+      <nav className="flex items-center justify-between px-6 h-16">
         {isValidationRoute ? (
-          <div className="-m-1.5 p-1.5 cursor-default" aria-disabled="true">
-            <span className="text-2xl font-semibold tracking-tight text-slate-900">Zello</span>
-          </div>
+          <span className="text-2xl font-bold text-teal-600 dark:text-teal-400 cursor-default" aria-disabled="true">Zello</span>
         ) : (
-          <Link href="/" className="-m-1.5 p-1.5">
-            <span className="text-2xl font-semibold tracking-tight text-slate-900">Zello</span>
+          <Link href={getLogoHref()}>
+            <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">Zello</span>
           </Link>
         )}
 
         {!shouldHideActions && (
           <>
-            <div className="hidden items-center gap-8 text-sm font-medium text-slate-600 lg:flex">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="transition-colors duration-200 hover:text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                >
-                  {link.label}
-                </Link>
-              ))}
+            {isLandingPage && (
+              <div className="hidden items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300 lg:flex">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="transition-colors duration-200 hover:text-teal-600 dark:hover:text-teal-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <div className="hidden lg:flex items-center gap-4">
+              {renderPrimaryAction()}
+              <ThemeToggle />
             </div>
 
-            <div className="hidden lg:flex">{renderPrimaryAction()}</div>
-
-            <button
-              type="button"
-              ref={menuButtonRef}
-              onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors duration-200 hover:border-slate-300 hover:text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
-              aria-label={isMobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
-              aria-expanded={isMobileMenuOpen}
-              aria-controls="mobile-navigation"
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            <div className="flex items-center gap-2 lg:hidden">
+              <ThemeToggle />
+              <button
+                type="button"
+                ref={menuButtonRef}
+                onClick={toggleMobileMenu}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-slate-600 dark:text-slate-300 transition-colors duration-200 hover:border-slate-300 hover:text-teal-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+                aria-label={isMobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-navigation"
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
           </>
+        )}
+
+        {/* ThemeToggle always visible as rightmost element, even on routes that hide nav actions */}
+        {shouldHideActions && (
+          <ThemeToggle />
         )}
       </nav>
 
@@ -212,51 +243,103 @@ export function Header() {
               <div
                 id="mobile-navigation"
                 ref={panelRef}
-                className={`relative left-0 flex h-full w-[75vw] max-w-sm flex-col bg-white shadow-2xl transform transition-transform duration-200 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`relative left-0 flex h-full w-[75vw] max-w-sm flex-col bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-200 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 aria-hidden={!isMobileMenuOpen}
               >
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
                   {isValidationRoute ? (
-                    <div className="-m-1.5 p-1.5 cursor-default" aria-disabled="true">
-                      <span className="text-2xl font-semibold tracking-tight text-slate-900">Zello</span>
-                    </div>
+                    <span className="text-2xl font-bold text-teal-600 dark:text-teal-400 cursor-default" aria-disabled="true">Zello</span>
                   ) : (
-                    <Link href="/" className="-m-1.5 p-1.5">
-                      <span className="text-2xl font-semibold tracking-tight text-slate-900">Zello</span>
+                    <Link href={getLogoHref()} onClick={closeMobileMenu}>
+                      <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">Zello</span>
                     </Link>
                   )}
                   <button
                     type="button"
                     onClick={closeMobileMenu}
-                    className="rounded-lg border border-slate-200 p-2 text-slate-500 transition hover:border-red-600 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-slate-500 transition hover:border-red-600 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                     aria-label="Fechar menu"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <nav className="px-4 py-8 text-slate-700">
-                  <ul className="space-y-6">
-                    {navLinks.map((link, i) => {
-                      const Icon = navIcons[i];
-                      return (
-                        <li key={`mobile-${link.label}`}>
-                          <Link
-                            href={link.href}
-                            onClick={closeMobileMenu}
-                            className="group flex items-center text-lg font-medium transition-colors duration-200 text-slate-700 hover:text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                          >
-                            <Icon className="h-5 w-5 mr-3 text-slate-500 transition-colors duration-200 group-hover:text-blue-600" />
-                            {link.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </nav>
+                {/* Dashboard Action at the top (below Logo) */}
+                {isAuthenticated && (
+                  <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <Link
+                      href={
+                        user?.role === 'DOCTOR' ? '/medico/dashboard' :
+                        user?.role === 'PATIENT' ? '/paciente/dashboard' :
+                        user?.role === 'ADMIN' ? '/admin/dashboard' : '/'
+                      }
+                      onClick={closeMobileMenu}
+                      className={`${baseActionClasses} border border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-400 dark:hover:bg-slate-800 focus-visible:outline-teal-600 w-full justify-center`}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </div>
+                )}
 
-                <div className="mt-auto border-t border-slate-100 px-4 py-6">
-                  {renderPrimaryAction({ fullWidth: true, onAction: closeMobileMenu })}
+                {isLandingPage && (
+                  <nav className="px-6 py-6 text-slate-700 flex-grow overflow-y-auto">
+                    <ul className="space-y-6">
+                      {navLinks.map((link, i) => {
+                        const Icon = navIcons[i];
+                        return (
+                          <li key={`mobile-${link.label}`}>
+                            <Link
+                              href={link.href}
+                              onClick={closeMobileMenu}
+                              className="group flex items-center text-lg font-medium transition-colors duration-200 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+                            >
+                              <Icon className="h-5 w-5 mr-3 text-slate-500 transition-colors duration-200 group-hover:text-teal-600" />
+                              {link.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </nav>
+                )}
+
+                {/* Spacer to push logout button down if not on landing page */}
+                {!isLandingPage && <div className="flex-grow" />}
+
+                {/* Bottom Actions (Logout or Sign In / Sign Up) */}
+                <div className="mt-auto border-t border-slate-100 dark:border-slate-800 px-6 py-6">
+                  {isAuthenticated ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        signOut();
+                        closeMobileMenu();
+                      }}
+                      className={`${baseActionClasses} border border-red-600 text-red-600 hover:bg-red-600 hover:text-white focus-visible:outline-red-600 w-full justify-center`}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <Link
+                        href="/cadastro"
+                        onClick={closeMobileMenu}
+                        className={`${baseActionClasses} border border-transparent bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 focus-visible:outline-teal-600 w-full justify-center`}
+                      >
+                        Cadastre-se
+                      </Link>
+                      <Link
+                        href="/login"
+                        onClick={closeMobileMenu}
+                        className={`${baseActionClasses} border border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-400 dark:hover:bg-slate-800 focus-visible:outline-teal-600 w-full justify-center`}
+                      >
+                        <LogIn className="h-4 w-4" />
+                        Acessar
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>,

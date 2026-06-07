@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -138,28 +138,30 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section ref={sectionRef} id="depoimentos" className="bg-white">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col justify-center px-6 py-24 sm:py-32 lg:px-8">
+    <section ref={sectionRef} id="depoimentos" className="bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Depoimentos</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:whitespace-nowrap">
-            Confiança comprovada por quem usa o Zello.
+          <span className="inline-block rounded-full bg-teal-50 dark:bg-teal-900/30 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.15em] text-teal-700 dark:text-teal-300">
+            Depoimentos
+          </span>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl md:whitespace-nowrap">
+            O que dizem nossos usuários
           </h2>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Histórias reais de profissionais e pacientes que enxergam no Zello uma jornada digital mais humana e segura.
+          <p className="mt-5 text-base leading-7 text-slate-500 dark:text-slate-300">
+            Médicos e pacientes compartilham como o Zello transformou sua experiência de saúde digital no dia a dia.
           </p>
         </div>
 
         <div className="relative mt-12">
           <div
             ref={containerRef}
-            className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6 transition-all duration-300 lg:[&::-webkit-scrollbar]:hidden lg:[scrollbar-width:none]"
+            className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6 transition-all duration-300 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
           >
             {testimonials.map((testimonial) => (
               <article
                 key={testimonial.name}
                 data-carousel-item
-                className="snap-start flex min-h-full w-[280px] flex-none flex-col gap-6 rounded-3xl bg-[#f9fafb] p-8 shadow-sm ring-1 ring-slate-100 transition-all duration-200 hover:-translate-y-2 hover:shadow-xl hover:ring-blue-100 sm:w-[320px] md:w-[340px] lg:w-[360px]"
+                className="snap-start flex min-h-full w-[280px] flex-none flex-col gap-6 rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:ring-teal-500/20 sm:w-[320px] md:w-[340px] lg:w-[360px]"
               >
                 <div className="flex items-center gap-4">
                   <Image
@@ -167,14 +169,14 @@ export function TestimonialsSection() {
                     alt={`Foto de ${testimonial.name}`}
                     width={56}
                     height={56}
-                    className="h-14 w-14 rounded-full object-cover"
+                    className="h-14 w-14 rounded-full object-cover ring-2 ring-teal-500/20"
                   />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{testimonial.name}</p>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{testimonial.role}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{testimonial.name}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-teal-600 dark:text-teal-400">{testimonial.role}</p>
                   </div>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">“{testimonial.message}”</p>
+                <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">&ldquo;{testimonial.message}&rdquo;</p>
               </article>
             ))}
           </div>
@@ -183,7 +185,7 @@ export function TestimonialsSection() {
             <button
               type="button"
               onClick={handlePrev}
-              className="pointer-events-auto inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-blue-100"
+              className="pointer-events-auto inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-teal-500/20 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               aria-label="Depoimento anterior"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -193,7 +195,7 @@ export function TestimonialsSection() {
             <button
               type="button"
               onClick={handleNext}
-              className="pointer-events-auto inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-blue-100"
+              className="pointer-events-auto inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-teal-500/20 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               aria-label="Próximo depoimento"
             >
               <ArrowRight className="h-5 w-5" />
@@ -204,5 +206,3 @@ export function TestimonialsSection() {
     </section>
   );
 }
-
-

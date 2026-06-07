@@ -1,4 +1,4 @@
-﻿// src/app.module.ts (versÃ£o final com servidor de arquivos estÃ¡ticos)
+// src/app.module.ts (versÃ£o final com servidor de arquivos estÃ¡ticos)
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -15,6 +15,9 @@ import { CidsModule } from './cids/cids.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { MailModule } from './mail/mail.module';
+import { AdminModule } from './admin/admin.module';
+import { AvailabilityModule } from './availability/availability.module';
+import { AppointmentModule } from './appointment/appointment.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { MailModule } from './mail/mail.module';
     TemplatesModule,
     CidsModule,
     MailModule,
+    AdminModule,
+    AvailabilityModule,
+    AppointmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

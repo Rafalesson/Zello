@@ -1,0 +1,647 @@
+diff --git a/apps/backend/src/appointment/appointment.controller.ts b/apps/backend/src/appointment/appointment.controller.ts
+new file mode 100644
+index 0000000..4530d8b
+--- /dev/null
++++ b/apps/backend/src/appointment/appointment.controller.ts
+@@ -0,0 +1,34 @@
++import { Controller, Post, Body, UseGuards, Req, HttpCode, HttpStatus, Get, Param, Query, BadRequestException } from '@nestjs/common';
++import { AppointmentService } from './appointment.service';
++import { CreateAppointmentDto } from './dto/create-appointment.dto';
++import { AuthGuard } from '../auth/auth.guard';
++import { RolesGuard } from '../auth/roles.guard';
++import { Roles } from '../auth/roles.decorator';
++
++@Controller('appointments')
++@UseGuards(AuthGuard, RolesGuard)
++export class AppointmentController {
++  constructor(private readonly appointmentService: AppointmentService) {}
++
++  @Get('availability/:doctorId')
++  // We can let any authenticated user (or even public) see slots, but currently it's guarded by AuthGuard/RolesGuard for PATIENT below?
++  // Actually, any role might want to see slots, but let's allow any authenticated user or PATIENT.
++  // Wait, the controller has @UseGuards(AuthGuard, RolesGuard), so it's authenticated.
++  async getAvailableSlots(
++    @Param('doctorId') doctorId: string,
++    @Query('date') date: string,
++  ) {
++    if (!date) {
++      throw new BadRequestException('Query param "date" is required (YYYY-MM-DD)');
++    }
++    return this.appointmentService.getAvailableSlots(Number(doctorId), date);
++  }
++
++  @Post()
++  @Roles('PATIENT')
++  @HttpCode(HttpStatus.CREATED)
++  create(@Req() req: any, @Body() createAppointmentDto: CreateAppointmentDto) {
++    const userId = req.user.sub;
++    return this.appointmentService.create(userId, createAppointmentDto);
++  }
++}
+diff --git a/apps/backend/src/appointment/appointment.module.ts b/apps/backend/src/appointment/appointment.module.ts
+new file mode 100644
+index 0000000..246c975
+--- /dev/null
++++ b/apps/backend/src/appointment/appointment.module.ts
+@@ -0,0 +1,11 @@
++import { Module } from '@nestjs/common';
++import { AppointmentService } from './appointment.service';
++import { AppointmentController } from './appointment.controller';
++import { PrismaModule } from '../prisma/prisma.module';
++
++@Module({
++  imports: [PrismaModule],
++  controllers: [AppointmentController],
++  providers: [AppointmentService],
++})
++export class AppointmentModule {}
+diff --git a/apps/backend/src/appointment/appointment.service.spec.ts b/apps/backend/src/appointment/appointment.service.spec.ts
+new file mode 100644
+index 0000000..f970e34
+--- /dev/null
++++ b/apps/backend/src/appointment/appointment.service.spec.ts
+@@ -0,0 +1,114 @@
++import { Test, TestingModule } from '@nestjs/testing';
++import { AppointmentService } from './appointment.service';
++import { PrismaService } from '../prisma/prisma.service';
++import { BadRequestException } from '@nestjs/common';
++import { DomainErrorCode } from '@imnotmedical/shared';
++
++describe('AppointmentService', () => {
++  let service: AppointmentService;
++  let prismaService: PrismaService;
++
++  const mockPrismaService = {
++    user: {
++      findUnique: jest.fn(),
++    },
++    appointment: {
++      findFirst: jest.fn(),
++      create: jest.fn(),
++    },
++  };
++
++  beforeEach(async () => {
++    const module: TestingModule = await Test.createTestingModule({
++      providers: [
++        AppointmentService,
++        {
++          provide: PrismaService,
++          useValue: mockPrismaService,
++        },
++      ],
++    }).compile();
++
++    service = module.get<AppointmentService>(AppointmentService);
++    prismaService = module.get<PrismaService>(PrismaService);
++  });
++
++  afterEach(() => {
++    jest.clearAllMocks();
++  });
++
++  it('should be defined', () => {
++    expect(service).toBeDefined();
++  });
++
++  describe('create', () => {
++    const userId = 1;
++    const createDto = {
++      doctorProfileId: 1,
++      date: '2026-06-10T10:00:00.000Z',
++    };
++    const appointmentDate = new Date(createDto.date);
++
++    it('should successfully create an appointment', async () => {
++      // Mock patient profile exists
++      mockPrismaService.user.findUnique.mockResolvedValue({
++        id: userId,
++        patientProfile: { id: 2 },
++      });
++
++      // Mock no existing appointment
++      mockPrismaService.appointment.findFirst.mockResolvedValue(null);
++
++      const expectedAppointment = {
++        id: 1,
++        doctorProfileId: 1,
++        patientProfileId: 2,
++        date: appointmentDate,
++        status: 'AGENDADA',
++      };
++      mockPrismaService.appointment.create.mockResolvedValue(expectedAppointment);
++
++      const result = await service.create(userId, createDto);
++
++      expect(result).toEqual(expectedAppointment);
++      expect(mockPrismaService.appointment.create).toHaveBeenCalledWith({
++        data: {
++          doctorProfileId: 1,
++          patientProfileId: 2,
++          date: appointmentDate,
++          status: 'AGENDADA',
++        },
++      });
++    });
++
++    it('should throw BadRequestException if patient profile is not found', async () => {
++      mockPrismaService.user.findUnique.mockResolvedValue({
++        id: userId,
++        patientProfile: null,
++      });
++
++      await expect(service.create(userId, createDto)).rejects.toThrow(
++        new BadRequestException('Usuário não possui perfil de paciente.')
++      );
++    });
++
++    it('should throw BadRequestException with SLOT_UNAVAILABLE if slot is taken', async () => {
++      mockPrismaService.user.findUnique.mockResolvedValue({
++        id: userId,
++        patientProfile: { id: 2 },
++      });
++
++      // Mock existing appointment
++      mockPrismaService.appointment.findFirst.mockResolvedValue({
++        id: 1,
++        status: 'AGENDADA',
++      });
++
++      await expect(service.create(userId, createDto)).rejects.toMatchObject({
++        response: {
++          code: DomainErrorCode.SLOT_UNAVAILABLE,
++        },
++      });
++    });
++  });
++});
+diff --git a/apps/backend/src/appointment/appointment.service.ts b/apps/backend/src/appointment/appointment.service.ts
+new file mode 100644
+index 0000000..3f347c1
+--- /dev/null
++++ b/apps/backend/src/appointment/appointment.service.ts
+@@ -0,0 +1,109 @@
++import { Injectable, BadRequestException } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++import { CreateAppointmentDto } from './dto/create-appointment.dto';
++import { DomainErrorCode } from '@imnotmedical/shared';
++
++@Injectable()
++export class AppointmentService {
++  constructor(private prisma: PrismaService) {}
++
++  async getAvailableSlots(doctorId: number, dateString: string) {
++    // We expect dateString in format YYYY-MM-DD
++    const [year, month, day] = dateString.split('-').map(Number);
++    if (!year || !month || !day) {
++      throw new BadRequestException('Data inválida. Use o formato YYYY-MM-DD.');
++    }
++    const queryDate = new Date(year, month - 1, day);
++    const dayOfWeek = queryDate.getDay();
++
++    const doctorSlots = await this.prisma.availability.findMany({
++      where: {
++        doctorProfileId: doctorId,
++        dayOfWeek,
++        isActive: true,
++      },
++      orderBy: { startTime: 'asc' },
++    });
++
++    if (doctorSlots.length === 0) return [];
++
++    const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
++    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
++
++    const appointments = await this.prisma.appointment.findMany({
++      where: {
++        doctorProfileId: doctorId,
++        date: {
++          gte: startOfDay,
++          lte: endOfDay,
++        },
++        status: { not: 'CANCELADA' },
++      },
++    });
++
++    const availableSlots = [];
++    for (const slot of doctorSlots) {
++      const [hours, minutes] = slot.startTime.split(':').map(Number);
++      const slotDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
++
++      const isTaken = appointments.some((app) => app.date.getTime() === slotDate.getTime());
++
++      if (!isTaken) {
++        availableSlots.push({
++          startTime: slot.startTime,
++          endTime: slot.endTime,
++          date: slotDate.toISOString(),
++        });
++      }
++    }
++
++    return availableSlots;
++  }
++
++  async create(userId: number, createAppointmentDto: CreateAppointmentDto) {
++    const { doctorProfileId, date } = createAppointmentDto;
++
++    // Get patient profile
++    const userWithProfile = await this.prisma.user.findUnique({
++      where: { id: userId },
++      include: { patientProfile: true },
++    });
++
++    if (!userWithProfile?.patientProfile) {
++      throw new BadRequestException('Usuário não possui perfil de paciente.');
++    }
++
++    const patientProfileId = userWithProfile.patientProfile.id;
++    const appointmentDate = new Date(date);
++
++    // Ensure the date is valid
++    if (isNaN(appointmentDate.getTime())) {
++      throw new BadRequestException('Data de agendamento inválida.');
++    }
++
++    // Validate that slot is available
++    const existingAppointment = await this.prisma.appointment.findFirst({
++      where: {
++        doctorProfileId,
++        date: appointmentDate,
++        status: { not: 'CANCELADA' },
++      },
++    });
++
++    if (existingAppointment) {
++      throw new BadRequestException({
++        code: DomainErrorCode.SLOT_UNAVAILABLE,
++        message: 'O horário selecionado não está mais disponível.',
++      });
++    }
++
++    return this.prisma.appointment.create({
++      data: {
++        doctorProfileId,
++        patientProfileId,
++        date: appointmentDate,
++        status: 'AGENDADA',
++      },
++    });
++  }
++}
+diff --git a/apps/backend/src/appointment/dto/create-appointment.dto.ts b/apps/backend/src/appointment/dto/create-appointment.dto.ts
+new file mode 100644
+index 0000000..b69215f
+--- /dev/null
++++ b/apps/backend/src/appointment/dto/create-appointment.dto.ts
+@@ -0,0 +1,11 @@
++import { IsNotEmpty, IsInt, IsDateString } from 'class-validator';
++
++export class CreateAppointmentDto {
++  @IsInt()
++  @IsNotEmpty()
++  doctorProfileId: number;
++
++  @IsDateString()
++  @IsNotEmpty()
++  date: string;
++}
+diff --git a/apps/frontend/src/app/medico/[id]/booking-widget.tsx b/apps/frontend/src/app/medico/[id]/booking-widget.tsx
+new file mode 100644
+index 0000000..21856a3
+--- /dev/null
++++ b/apps/frontend/src/app/medico/[id]/booking-widget.tsx
+@@ -0,0 +1,258 @@
++'use client';
++
++import { useState } from 'react';
++import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
++import { 
++  Calendar as CalendarIcon, 
++  Clock, 
++  Video, 
++  MapPin, 
++  CheckCircle2, 
++  Info,
++  Loader2,
++  XCircle
++} from 'lucide-react';
++import { format } from 'date-fns';
++import { ptBR } from 'date-fns/locale';
++import { api } from '@/services/api';
++import { CalendarStrip } from '@/components/consultation/CalendarStrip';
++
++interface Availability {
++  dayOfWeek: number;
++  startTime: string;
++  endTime: string;
++  slotDurationMinutes: number;
++  isActive: boolean;
++}
++
++interface BookingWidgetProps {
++  doctorId: number;
++  doctorName: string;
++  price: number;
++  availabilities: Availability[];
++}
++
++export function BookingWidget({ doctorId, doctorName, price, availabilities = [] }: BookingWidgetProps) {
++  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
++  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
++  const [bookingStatus, setBookingStatus] = useState<'idle' | 'success'>('idle');
++  
++  // Custom toast state
++  const [toast, setToast] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
++
++  const queryClient = useQueryClient();
++
++  const formattedDateQuery = format(selectedDate, 'yyyy-MM-dd');
++
++  // Fetch available slots from backend
++  const { data: availableSlots = [], isLoading: isSlotsLoading } = useQuery({
++    queryKey: ['available-slots', doctorId, formattedDateQuery],
++    queryFn: async () => {
++      const res = await api.get(`/appointments/availability/${doctorId}?date=${formattedDateQuery}`);
++      return res.data;
++    },
++  });
++
++  // Mutation to book appointment
++  const bookMutation = useMutation({
++    mutationFn: async (dateIso: string) => {
++      const res = await api.post('/appointments', {
++        doctorProfileId: doctorId,
++        date: dateIso,
++      });
++      return res.data;
++    },
++    onSuccess: () => {
++      setBookingStatus('success');
++      queryClient.invalidateQueries({ queryKey: ['available-slots', doctorId, formattedDateQuery] });
++      setToast({ type: 'success', message: 'Consulta agendada com sucesso!' });
++      // clear toast after 3 seconds
++      setTimeout(() => setToast({ type: null, message: '' }), 3000);
++    },
++    onError: (error: any) => {
++      setToast({ 
++        type: 'error', 
++        message: error.response?.data?.message || 'Erro ao agendar consulta. O horário pode não estar mais disponível.' 
++      });
++      setTimeout(() => setToast({ type: null, message: '' }), 4000);
++    }
++  });
++
++  const handleDateSelect = (date: Date) => {
++    setSelectedDate(date);
++    setSelectedSlot(null);
++    setBookingStatus('idle');
++  };
++
++  const handleSlotSelect = (slotTime: string) => {
++    setSelectedSlot(slotTime);
++    setBookingStatus('idle');
++  };
++
++  const handleConfirmBooking = () => {
++    if (!selectedDate || !selectedSlot) return;
++    
++    // Find the slot to get the full ISO date string
++    const slot = availableSlots.find((s: any) => s.startTime === selectedSlot);
++    if (!slot) return;
++    
++    bookMutation.mutate(slot.date);
++  };
++
++  return (
++    <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-800 sticky top-24 transition-all relative overflow-hidden">
++      
++      {/* Toast Notification */}
++      {toast.type && (
++        <div className={`absolute top-0 left-0 w-full p-3 text-xs font-bold text-center z-10 flex items-center justify-center gap-2
++          ${toast.type === 'success' ? 'bg-teal-500 text-white' : 'bg-rose-500 text-white'}
++        `}>
++          {toast.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
++          {toast.message}
++        </div>
++      )}
++
++      <h2 className="text-lg font-black text-slate-900 dark:text-white border-b border-slate-100 pb-4 dark:border-slate-700 mt-2">
++        Agendamento
++      </h2>
++
++      {bookingStatus === 'success' ? (
++        <div className="mt-6 text-center space-y-4 py-4 animate-fade-in">
++          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400">
++            <CheckCircle2 className="h-8 w-8" />
++          </div>
++          <h3 className="text-md font-bold text-slate-900 dark:text-white">Consulta Pré-Agendada!</h3>
++          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
++            Sua solicitação de consulta com <strong>{doctorName}</strong> para o dia <strong>{selectedDate?.toLocaleDateString('pt-BR')}</strong> às <strong>{selectedSlot}</strong> foi registrada.
++          </p>
++          <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-left border border-slate-200 dark:border-slate-700">
++            <div className="flex gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
++              <Video className="h-4 w-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
++              <span>Link da teleconsulta será enviado por e-mail.</span>
++            </div>
++          </div>
++          <button
++            onClick={() => {
++              setBookingStatus('idle');
++              setSelectedSlot(null);
++            }}
++            className="w-full inline-flex justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
++          >
++            Agendar Outra Consulta
++          </button>
++        </div>
++      ) : (
++        <div className="mt-5 space-y-5">
++          {/* Price detail */}
++          <div className="flex items-center justify-between">
++            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Valor da consulta</span>
++            <div className="text-right">
++              <span className="text-2xl font-black text-slate-900 dark:text-white">R$ {price}</span>
++              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mt-0.5">Retorno incluso em até 30 dias</p>
++            </div>
++          </div>
++
++          {/* Modalidades available */}
++          <div className="flex gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
++            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
++              <Video className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
++              <span>Teleconsulta</span>
++            </div>
++            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
++              <MapPin className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
++              <span>Presencial</span>
++            </div>
++          </div>
++
++          {/* Horizontal Calendar Strip Component */}
++          <div className="space-y-2">
++            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
++              Selecione a Data
++            </label>
++            <CalendarStrip 
++              onSelectDate={handleDateSelect} 
++              selectedDate={selectedDate} 
++              daysToGenerate={14} 
++              hasSlots={(date) => availabilities.some(a => a.dayOfWeek === date.getDay() && a.isActive)}
++            />
++          </div>
++
++          {/* Time Slots Area */}
++          <div className="space-y-2">
++            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex justify-between items-center">
++              <span>Horários Disponíveis</span>
++              {isSlotsLoading && <Loader2 className="h-3 w-3 animate-spin" />}
++            </label>
++            
++            {availableSlots.length > 0 ? (
++              <div className="grid grid-cols-3 gap-2">
++                {availableSlots.map((slot: any) => {
++                  const isSelected = selectedSlot === slot.startTime;
++                  return (
++                    <button
++                      key={slot.startTime}
++                      type="button"
++                      onClick={() => handleSlotSelect(slot.startTime)}
++                      className={`flex items-center justify-center gap-1 py-2 rounded-lg border text-xs font-bold transition-all ${
++                        isSelected
++                          ? 'bg-teal-50 border-teal-500 text-teal-700 dark:bg-teal-900/40 dark:border-teal-400 dark:text-teal-300'
++                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'
++                      }`}
++                    >
++                      <Clock className="h-3 w-3 opacity-60" />
++                      <span>{slot.startTime}</span>
++                    </button>
++                  );
++                })}
++              </div>
++            ) : (
++              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/40 text-center">
++                <CalendarIcon className="h-5 w-5 text-slate-400 dark:text-slate-500 mx-auto mb-1.5" />
++                <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Sem horários neste dia</p>
++                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Selecione outro dia na barra acima</p>
++              </div>
++            )}
++          </div>
++
++          {/* Summary / Book CTA */}
++          <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
++            {selectedDate && selectedSlot ? (
++              <div className="bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100/60 dark:border-teal-900/50 rounded-xl p-3.5 text-xs text-teal-800 dark:text-teal-300 mb-4 space-y-1 animate-fade-in">
++                <p className="font-bold flex items-center gap-1">
++                  <CheckCircle2 className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
++                  Resumo do Agendamento
++                </p>
++                <p className="pl-4 mt-1 font-medium">
++                  {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
++                </p>
++                <p className="pl-4 font-bold">
++                  Horário: {selectedSlot} ({availableSlots.find((s: any) => s.startTime === selectedSlot)?.slotDurationMinutes || 60} min)
++                </p>
++              </div>
++            ) : (
++              <div className="flex gap-2 p-3 rounded-xl bg-amber-50/40 border border-amber-100/40 dark:bg-amber-900/20 dark:border-amber-900/40 text-[10px] text-amber-800 dark:text-amber-300 leading-normal mb-4">
++                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
++                <span>Selecione uma data e horário acima para habilitar o agendamento da consulta.</span>
++              </div>
++            )}
++
++            <button
++              onClick={handleConfirmBooking}
++              disabled={!selectedDate || !selectedSlot || bookMutation.isPending}
++              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all disabled:shadow-none"
++            >
++              {bookMutation.isPending ? (
++                <>
++                  <Loader2 className="h-4 w-4 animate-spin" />
++                  <span>Processando...</span>
++                </>
++              ) : (
++                <span>Confirmar Agendamento</span>
++              )}
++            </button>
++          </div>
++        </div>
++      )}
++    </aside>
++  );
++}
+diff --git a/apps/frontend/src/components/consultation/CalendarStrip.tsx b/apps/frontend/src/components/consultation/CalendarStrip.tsx
+new file mode 100644
+index 0000000..8bd2ea0
+--- /dev/null
++++ b/apps/frontend/src/components/consultation/CalendarStrip.tsx
+@@ -0,0 +1,68 @@
++'use client';
++
++import React, { useState, useEffect } from 'react';
++import { format, addDays } from 'date-fns';
++import { ptBR } from 'date-fns/locale';
++
++interface CalendarStripProps {
++  onSelectDate: (date: Date) => void;
++  selectedDate: Date;
++  daysToGenerate?: number;
++  hasSlots?: (date: Date) => boolean;
++}
++
++export function CalendarStrip({ onSelectDate, selectedDate, daysToGenerate = 14, hasSlots }: CalendarStripProps) {
++  const [dates, setDates] = useState<Date[]>([]);
++
++  useEffect(() => {
++    const today = new Date();
++    const generatedDates = Array.from({ length: daysToGenerate }).map((_, i) => addDays(today, i));
++    setDates(generatedDates);
++  }, [daysToGenerate]);
++
++  return (
++    <div className="w-full overflow-hidden">
++      <div 
++        className="flex gap-3 overflow-x-auto pb-4 pt-2 px-1 snap-x snap-mandatory"
++        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
++      >
++        <style dangerouslySetInnerHTML={{__html: `
++          .flex::-webkit-scrollbar { display: none; }
++        `}} />
++        
++        {dates.map((date, index) => {
++          const isSelected = format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
++          
++          return (
++            <button
++              key={index}
++              onClick={() => onSelectDate(date)}
++              className={`
++                flex flex-col items-center justify-center snap-start flex-shrink-0 
++                w-[72px] h-[88px] rounded-2xl border transition-all duration-200
++                ${isSelected 
++                  ? 'bg-teal-600 border-teal-600 text-white shadow-md shadow-teal-600/20' 
++                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-500/50 hover:bg-slate-50 dark:hover:bg-slate-700/50'}
++              `}
++              aria-pressed={isSelected}
++              aria-label={format(date, "EEEE, d 'de' MMMM", { locale: ptBR })}
++            >
++              <span className={`text-xs font-medium uppercase ${isSelected ? 'text-teal-50' : 'text-slate-500 dark:text-slate-400'}`}>
++                {format(date, 'EEE', { locale: ptBR })}
++              </span>
++              <span className="text-2xl font-bold mt-1 mb-0.5">
++                {format(date, 'd')}
++              </span>
++              <span className={`text-[10px] uppercase font-medium ${isSelected ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'}`}>
++                {format(date, 'MMM', { locale: ptBR })}
++              </span>
++              {hasSlots && hasSlots(date) && (
++                <span className={`h-1.5 w-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-teal-500'}`} />
++              )}
++            </button>
++          );
++        })}
++      </div>
++    </div>
++  );
++}

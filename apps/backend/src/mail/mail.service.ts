@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { ptBR } from 'date-fns/locale';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private transporterPromise: Promise<void> | null = null;
 
   constructor() {
-    void this.initializeTransporter();
+    this.transporterPromise = this.initializeTransporter();
   }
 
   private async initializeTransporter(): Promise<void> {
@@ -23,7 +28,7 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.error('Falha ao inicializar o transporter de e-mail:', error);
+      this.logger.error('Falha ao inicializar o transporter de e-mail:', error);
       this.transporter = null;
     }
   }
@@ -32,12 +37,17 @@ export class MailService {
     userEmail: string,
     token: string,
   ): Promise<void> {
+    if (!this.transporter && this.transporterPromise) {
+      await this.transporterPromise;
+    }
+
     if (!this.transporter) {
-      console.error('Transporter nao inicializado!');
+      this.logger.error('Transporter nao inicializado! Nao foi possivel enviar o e-mail de redefinicao de senha.');
       return;
     }
 
-    const resetUrl = `http://localhost:3001/redefinir-senha?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
 
     const info = await this.transporter.sendMail({
       from: '"Equipe Zello" <nao-responda@zello.com.br>',
@@ -50,8 +60,8 @@ export class MailService {
           <p>Voce solicitou a redefinicao de sua senha. Clique no link abaixo para criar uma nova senha:</p>
           <p style="margin: 20px 0;">
             <a
-              href="${resetUrl}"
-              style="background-color: #2563eb; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;"
+               href="${resetUrl}"
+              style="background-color: #0d9488; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;"
             >
               Redefinir Minha Senha
             </a>
@@ -63,9 +73,104 @@ export class MailService {
       `,
     });
 
-    console.log(
-      'E-mail de teste enviado! Preview URL: %s',
-      nodemailer.getTestMessageUrl(info),
+    this.logger.log(
+      `E-mail de teste enviado! Preview URL: ${nodemailer.getTestMessageUrl(info)}`,
     );
+  }
+
+  async sendBookingConfirmationToPatient(
+    patientEmail: string,
+    patientName: string,
+    doctorName: string,
+    date: Date,
+  ): Promise<void> {
+    if (!this.transporter && this.transporterPromise) {
+      await this.transporterPromise;
+    }
+
+    if (!this.transporter) {
+      this.logger.error('Transporter nao inicializado! Nao foi possivel enviar confirmacao para o paciente.');
+      return;
+    }
+
+    if (isNaN(date.getTime())) {
+      this.logger.error('Data invalida para o envio do e-mail de confirmacao do paciente.');
+      return;
+    }
+
+    try {
+      const formattedDate = formatInTimeZone(date, 'America/Sao_Paulo', "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+
+      const info = await this.transporter.sendMail({
+        from: '"Equipe Zello" <nao-responda@zello.com.br>',
+        to: patientEmail,
+        subject: 'Confirmação de Agendamento - Zello',
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2 style="color: #0d9488;">Consulta Confirmada!</h2>
+            <p>Olá, <strong>${patientName}</strong>,</p>
+            <p>Sua consulta com <strong>Dr(a). ${doctorName}</strong> foi agendada com sucesso.</p>
+            <p style="background-color: #f0fdfa; padding: 15px; border-left: 4px solid #0d9488; margin: 20px 0;">
+              📅 <strong>Data e Horário:</strong> ${formattedDate}
+            </p>
+            <p>Agradecemos por usar o Zello.</p>
+            <br>
+            <p>Atenciosamente,<br>Equipe Zello.</p>
+          </div>
+        `,
+      });
+
+      this.logger.log(`E-mail de paciente enviado! Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    } catch (error) {
+      this.logger.error('Erro ao enviar e-mail para o paciente:', error);
+    }
+  }
+
+  async sendBookingConfirmationToDoctor(
+    doctorEmail: string,
+    doctorName: string,
+    patientName: string,
+    date: Date,
+  ): Promise<void> {
+    if (!this.transporter && this.transporterPromise) {
+      await this.transporterPromise;
+    }
+
+    if (!this.transporter) {
+      this.logger.error('Transporter nao inicializado! Nao foi possivel enviar confirmacao para o medico.');
+      return;
+    }
+
+    if (isNaN(date.getTime())) {
+      this.logger.error('Data invalida para o envio do e-mail de confirmacao do medico.');
+      return;
+    }
+
+    try {
+      const formattedDate = formatInTimeZone(date, 'America/Sao_Paulo', "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+
+      const info = await this.transporter.sendMail({
+        from: '"Equipe Zello" <nao-responda@zello.com.br>',
+        to: doctorEmail,
+        subject: 'Novo Agendamento - Zello',
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2 style="color: #0d9488;">Novo Agendamento</h2>
+            <p>Olá, <strong>Dr(a). ${doctorName}</strong>,</p>
+            <p>Você tem uma nova consulta agendada com o paciente <strong>${patientName}</strong>.</p>
+            <p style="background-color: #f0fdfa; padding: 15px; border-left: 4px solid #0d9488; margin: 20px 0;">
+              📅 <strong>Data e Horário:</strong> ${formattedDate}
+            </p>
+            <p>Por favor, acesse o painel para mais detalhes.</p>
+            <br>
+            <p>Atenciosamente,<br>Equipe Zello.</p>
+          </div>
+        `,
+      });
+
+      this.logger.log(`E-mail de medico enviado! Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    } catch (error) {
+      this.logger.error('Erro ao enviar e-mail para o medico:', error);
+    }
   }
 }

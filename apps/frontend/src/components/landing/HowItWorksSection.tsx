@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useRef } from 'react';
@@ -21,9 +21,9 @@ const steps: Step[] = [
       'Conecte-se por vídeo com estabilidade e prontuário integrado, mantendo todo o histórico em um só lugar.',
   },
   {
-    title: 'Emita documentos válidos',
+    title: 'Receba seus documentos',
     description:
-      'Gere atestados, receitas e laudos com validade jurídica, assinados digitalmente e prontos para o envio.',
+      'Atestados e receitas médicas emitidos digitalmente, com validação por QR Code e entrega instantânea no seu e-mail.',
   },
 ];
 
@@ -32,15 +32,17 @@ export function HowItWorksSection() {
   useScrollReveal(sectionRef);
 
   return (
-    <section ref={sectionRef} id="how-it-works" className="bg-[#f9fafb]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col justify-center px-6 py-24 sm:py-32 lg:px-8">
+    <section ref={sectionRef} id="how-it-works" className="bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Como funciona</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:whitespace-nowrap">
-            Comece a usar o Zello em três passos simples
+          <span className="inline-block rounded-full bg-teal-50 dark:bg-teal-900/30 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.15em] text-teal-700 dark:text-teal-300">
+            Como funciona
+          </span>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl md:whitespace-nowrap">
+            Sua jornada de saúde em três passos simples
           </h2>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Processos guiados, integrações automáticas e suporte humano garantem uma jornada tranquila do cadastro à emissão dos documentos.
+          <p className="mt-5 text-base leading-7 text-slate-500 dark:text-slate-300">
+            Do primeiro acesso à emissão de documentos, tudo foi pensado para ser rápido, seguro e totalmente intuitivo.
           </p>
         </div>
 
@@ -49,36 +51,26 @@ export function HowItWorksSection() {
             <div
               key={step.title}
               data-reveal
-              className="group relative flex flex-col gap-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:-translate-y-2 hover:shadow-xl hover:ring-blue-100"
+              className="group relative flex flex-col gap-4 rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:ring-teal-500/20"
             >
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-lg font-semibold text-white shadow-md transition-transform duration-200 group-hover:scale-105">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 text-lg font-bold text-white shadow-md shadow-teal-600/25 transition-transform duration-300 group-hover:scale-110">
                 {index + 1}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
-              <p className="text-sm leading-6 text-slate-600">{step.description}</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{step.title}</h3>
+              <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">{step.description}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-14 w-full px-4 sm:px-0">
-          {/* Grid with 3 equal columns on md+, place button in middle column so it matches card width */}
-          <div className="mx-auto grid w-full grid-cols-1 md:grid-cols-3">
-            <div />
-            <div className="flex justify-center">
-              <Link
-                href="/cadastro"
-                className="w-full sm:inline-flex items-center justify-center text-center rounded-lg border border-blue-600 bg-transparent px-8 py-4 text-base sm:text-lg font-semibold text-blue-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              >
-                Começar Agora
-              </Link>
-            </div>
-            <div />
-          </div>
+        <div className="mt-14 flex justify-center">
+          <Link
+            href="/cadastro"
+            className="inline-flex items-center justify-center rounded-xl border-2 border-teal-600 bg-transparent px-10 py-4 text-base font-semibold text-teal-600 transition-all duration-300 hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-r hover:from-teal-600 hover:to-teal-500 hover:text-white hover:shadow-lg hover:shadow-teal-600/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 dark:border-teal-400 dark:text-teal-400 dark:hover:border-transparent"
+          >
+            Começar Agora
+          </Link>
         </div>
       </div>
     </section>
   );
 }
-
-
-

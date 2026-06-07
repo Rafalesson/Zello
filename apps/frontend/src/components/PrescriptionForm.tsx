@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -142,7 +142,7 @@ export function PrescriptionForm() {
   };
 
   const handleGoToDashboard = () => {
-    router.push('/dashboard');
+    router.push('/medico/dashboard');
   };
 
   const previewContent = useMemo(() => {
@@ -216,9 +216,9 @@ export function PrescriptionForm() {
           onSelect={handleSelectPatient}
           initialValue={data.patient}
           renderOption={(patient) => (
-            <div className="p-3 cursor-pointer hover:bg-gray-100">
-              <p className="font-semibold text-gray-900">{patient.name}</p>
-              <p className="text-sm text-gray-500">CPF: {patient.cpf}</p>
+            <div className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
+              <p className="font-semibold text-gray-900 dark:text-slate-100">{patient.name}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">CPF: {patient.cpf}</p>
             </div>
           )}
           displayValue={(patient) => patient.name}
@@ -226,22 +226,22 @@ export function PrescriptionForm() {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Medicamentos e Orientações</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-200">Medicamentos e Orientações</h2>
             <button
               type="button"
               onClick={handleAddItem}
-              className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center rounded-md bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar item
             </button>
           </div>
 
           {data.items.map((item) => (
-            <div key={item.id} className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <div key={item.id} className="rounded-lg border border-gray-200 dark:border-slate-600 p-4 space-y-3">
               <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-3">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                       Nome do medicamento ou orientação
                     </label>
                     <input
@@ -250,7 +250,7 @@ export function PrescriptionForm() {
                       onChange={(event) =>
                         handleItemChange(item.id, 'title', event.target.value)
                       }
-                      className="w-full rounded-md border border-gray-300 p-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-2 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-600 placeholder-gray-400 dark:placeholder-slate-500"
                       placeholder="Ex: CALMAN — 1 cx"
                       required
                     />
@@ -265,7 +265,7 @@ export function PrescriptionForm() {
                         handleItemChange(item.id, 'description', event.target.value)
                       }
                       rows={3}
-                      className="w-full rounded-md border border-gray-300 p-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-2 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-600 placeholder-gray-400 dark:placeholder-slate-500"
                       placeholder="Ex: Tomar 1 comprimido a cada 12 horas"
                     />
                   </div>
@@ -279,7 +279,7 @@ export function PrescriptionForm() {
                         handleItemChange(item.id, 'observation', event.target.value)
                       }
                       rows={2}
-                      className="w-full rounded-md border border-gray-300 p-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-2 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-600 placeholder-gray-400 dark:placeholder-slate-500"
                       placeholder="Ex: Reforçar ingestão de água, evitar cafeína."
                     />
                   </div>
@@ -287,7 +287,7 @@ export function PrescriptionForm() {
                 <button
                   type="button"
                   onClick={() => handleRemoveItem(item.id)}
-                  className="rounded-md border border-gray-200 p-2 text-gray-500 hover:text-red-600 hover:border-red-200"
+                  className="rounded-md border border-gray-200 dark:border-slate-600 p-2 text-gray-500 dark:text-slate-400 hover:text-red-600 hover:border-red-200 dark:hover:text-red-400 dark:hover:border-red-800"
                   title="Remover item"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -298,7 +298,7 @@ export function PrescriptionForm() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">
             Orientações gerais
           </label>
           <textarea
@@ -307,13 +307,13 @@ export function PrescriptionForm() {
               setData({ ...data, generalGuidance: event.target.value })
             }
             rows={4}
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-3 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-600 placeholder-gray-400 dark:placeholder-slate-500"
             placeholder="Ex: Evitar bebidas estimulantes, praticar atividade física 3x por semana"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">
             Observações ao paciente
           </label>
           <textarea
@@ -322,14 +322,14 @@ export function PrescriptionForm() {
               setData({ ...data, additionalNotes: event.target.value })
             }
             rows={3}
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-3 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-600 placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>
 
         <div className="flex justify-end">
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-6 py-2 text-white font-semibold hover:bg-blue-700"
+            className="rounded-md bg-teal-600 px-6 py-2 text-white font-semibold hover:bg-teal-700"
           >
             Gerar pré-visualização
           </button>

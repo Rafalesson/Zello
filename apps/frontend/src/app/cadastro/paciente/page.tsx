@@ -416,48 +416,48 @@ export default function PatientRegistrationPage() {
     await submitToServer();
   };
   
-  const inputStyles = "mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400";
-  const labelStyles = "block text-sm font-medium text-gray-700";
+  const inputStyles = "mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm p-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors";
+  const labelStyles = "block text-sm font-medium text-slate-700 dark:text-slate-200";
 
   return (
     <PublicLayout>
-      <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-lg mb-10">
-  <h1 className="text-2xl font-bold text-gray-800 mb-6">Cadastro de paciente</h1>
+      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-lg ring-1 ring-slate-900/5 dark:ring-slate-700 mb-10">
+  <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Cadastro de paciente</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <fieldset className="space-y-4">
-            <legend className="text-lg font-semibold text-blue-500 border-b pb-2 mb-4">Dados da Conta</legend>
+            <legend className="text-lg font-semibold text-teal-600 dark:text-teal-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-4">Dados da Conta</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="email" className={labelStyles}>Email</label>
-                <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} required className={inputStyles}/>
+                <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} required className={inputStyles} placeholder="seu@email.com"/>
                 {touched.email && fieldErrors.email && <p className="text-sm text-red-600 mt-1">{fieldErrors.email}</p>}
               </div>
 
               <div>
                 <label htmlFor="phone" className={labelStyles}>Telefone</label>
-                <input id="phone" type="tel" name="phone" value={formData.phone} onChange={handleChange} onBlur={handleBlur} className={inputStyles}/>
+                <input id="phone" type="tel" name="phone" value={formData.phone} onChange={handleChange} onBlur={handleBlur} className={inputStyles} placeholder="(00) 00000-0000"/>
                 {touched.phone && fieldErrors.phone && <p className="text-sm text-red-600 mt-1">{fieldErrors.phone}</p>}
               </div>
 
               <div>
                 <label htmlFor="password" className={labelStyles}>Senha</label>
-                <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} onBlur={handleBlur} required className={inputStyles}/>
+                <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} onBlur={handleBlur} required className={inputStyles} placeholder="Mínimo 8 caracteres"/>
                 {touched.password && fieldErrors.password && <p className="text-sm text-red-600 mt-1">{fieldErrors.password}</p>}
               </div>
 
               <div>
                 <label htmlFor="passwordConfirmation" className={labelStyles}>Confirmar Senha</label>
-                <input id="passwordConfirmation" type="password" name="passwordConfirmation" value={formData.passwordConfirmation} onChange={handleChange} onBlur={handleBlur} required className={inputStyles}/>
+                <input id="passwordConfirmation" type="password" name="passwordConfirmation" value={formData.passwordConfirmation} onChange={handleChange} onBlur={handleBlur} required className={inputStyles} placeholder="Repita a senha"/>
                 {touched.passwordConfirmation && fieldErrors.passwordConfirmation && <p className="text-sm text-red-600 mt-1">{fieldErrors.passwordConfirmation}</p>}
               </div>
             </div>
           </fieldset>
           <fieldset className="space-y-4">
-            <legend className="text-lg font-semibold text-blue-500 border-b pb-2 mb-4">Dados Pessoais</legend>
+            <legend className="text-lg font-semibold text-teal-600 dark:text-teal-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-4">Dados Pessoais</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label htmlFor="name" className={labelStyles}>Nome Completo</label>
-                <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} required className={inputStyles}/>
+                <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} required className={inputStyles} placeholder="Nome completo do paciente"/>
                 {touched.name && fieldErrors.name && <p className="text-sm text-red-600 mt-1">{fieldErrors.name}</p>}
               </div>
 
@@ -484,8 +484,8 @@ export default function PatientRegistrationPage() {
               </div>
             </div>
           </fieldset>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={isLoading} className="w-full rounded-md bg-blue-600 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300">
+          {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
+          <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-teal-600 py-3 text-white font-semibold shadow-lg hover:bg-teal-700 transition-colors disabled:bg-teal-300 dark:disabled:bg-teal-800 disabled:cursor-not-allowed">
             {isLoading ? 'Criando conta...' : 'Finalizar Cadastro'}
           </button>
         </form>
@@ -493,26 +493,26 @@ export default function PatientRegistrationPage() {
         {showAgeConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black opacity-40" onClick={() => { setShowAgeConfirm(false); setPendingAge(null); }} />
-            <div className="bg-white rounded-lg shadow-xl z-10 max-w-lg w-full mx-4 p-6" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="age-confirm-title">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl z-10 max-w-lg w-full mx-4 p-6 ring-1 ring-slate-900/5 dark:ring-slate-700" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="age-confirm-title">
               <div className="flex items-start justify-between">
-                <h3 id="age-confirm-title" className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <h3 id="age-confirm-title" className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   {/* importance icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l5.454 9.688c.75 1.334-.213 2.963-1.742 2.963H4.545c-1.53 0-2.492-1.629-1.742-2.963L8.257 3.1zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-8a1 1 0 00-.993.883L8.89 7.5v3a1 1 0 001.993.117L10.89 10.5v-3a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   Confirmação de Idade
                 </h3>
-                <button aria-label="Fechar" className="text-gray-500 hover:text-red-600 cursor-pointer" onClick={() => { setShowAgeConfirm(false); setPendingAge(null); }}>
+                <button aria-label="Fechar" className="text-slate-500 dark:text-slate-400 hover:text-red-600 cursor-pointer" onClick={() => { setShowAgeConfirm(false); setPendingAge(null); }}>
                   {/* simple X icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </button>
               </div>
-              <p className="mt-3 text-sm text-gray-700">Você está cadastrando um paciente com idade fora da faixa comum <span className="font-bold text-gray-900">{formatAttemptedAge(formData.dateOfBirth)}</span>. Deseja confirmar essa informação?</p>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Você está cadastrando um paciente com idade fora da faixa comum <span className="font-bold text-slate-900 dark:text-white">{formatAttemptedAge(formData.dateOfBirth)}</span>. Deseja confirmar essa informação?</p>
               <div className="mt-6 flex justify-center gap-3">
-                <button className="px-4 py-2 rounded-md bg-red-600 bg-opacity-60 text-white hover:bg-opacity-100 hover:bg-red-700 cursor-pointer transition" onClick={() => { setShowAgeConfirm(false); setPendingAge(null); }}>Cancelar</button>
-                <button className="px-4 py-2 rounded-md bg-blue-600 bg-opacity-60 text-white hover:bg-opacity-100 hover:bg-blue-700 cursor-pointer transition" onClick={async () => { setShowAgeConfirm(false); setPendingAge(null); await submitToServer(); }}>Confirmar</button>
+                <button className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 cursor-pointer transition" onClick={() => { setShowAgeConfirm(false); setPendingAge(null); }}>Cancelar</button>
+                <button className="px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 cursor-pointer transition" onClick={async () => { setShowAgeConfirm(false); setPendingAge(null); await submitToServer(); }}>Confirmar</button>
               </div>
             </div>
           </div>

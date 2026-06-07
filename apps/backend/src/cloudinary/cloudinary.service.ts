@@ -1,4 +1,4 @@
-﻿import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
@@ -6,6 +6,7 @@ import { Readable } from 'stream';
 export class CloudinaryService {
   private readonly certificatesFolder = 'certificates';
   private readonly prescriptionsFolder = 'prescriptions';
+  private readonly profilePicturesFolder = 'profile-pictures';
   private readonly isConfigured: boolean;
 
   constructor() {
@@ -30,6 +31,16 @@ export class CloudinaryService {
     });
 
     this.isConfigured = true;
+  }
+
+  // Envia foto de perfil (imagem) para a Cloudinary com transformacoes automaticas.
+  async uploadProfilePicture(
+    buffer: Buffer,
+    identifier: string,
+  ): Promise<UploadApiResponse> {
+    this.ensureConfigured();
+    const publicId = `${this.profilePicturesFolder}/${identifier}`;
+    return this.uploadImage(buffer, { publicId });
   }
 
   // Envia o buffer PDF para a pasta de certificados mantendo o id do registro como public id.
@@ -142,6 +153,38 @@ export class CloudinaryService {
     }
 
     return withoutExtension;
+  }
+
+  // Helper para upload de imagens (profile pictures) com transformações automáticas.
+  private uploadImage(
+    buffer: Buffer,
+    options: { publicId: string },
+  ) {
+    return new Promise<UploadApiResponse>((resolve, reject) => {
+      const upload = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          public_id: options.publicId,
+          overwrite: true,
+          transformation: [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto', fetch_format: 'auto' },
+          ],
+        },
+        (error: Error | undefined, result: UploadApiResponse | undefined) => {
+          if (error) {
+            return reject(
+              error instanceof Error ? error : new Error(String(error)),
+            );
+          }
+          if (!result) {
+            return reject(new Error('Cloudinary upload returned no result.'));
+          }
+          resolve(result);
+        },
+      );
+      Readable.from(buffer).pipe(upload);
+    });
   }
 
   private ensureConfigured() {

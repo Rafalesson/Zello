@@ -13,7 +13,7 @@ export function useCertificatePreview() {
 
   useEffect(() => {
     if (!formData) {
-      router.replace('/dashboard/atestados/novo');
+      router.replace('/medico/atestados/novo');
       return;
     }
 
@@ -43,7 +43,7 @@ export function useCertificatePreview() {
           alert(`Erro: ${errorMessage}`);
         }
 
-        router.push('/dashboard/atestados/novo');
+        router.push('/medico/atestados/novo');
       } finally {
         setIsLoading(false);
       }

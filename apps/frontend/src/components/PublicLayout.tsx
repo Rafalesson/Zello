@@ -1,8 +1,8 @@
-// Endereço: apps/frontend/src/components/PublicLayout.tsx (versão com dvh)
+// Endereço: apps/frontend/src/components/PublicLayout.tsx
 'use client';
 
-import { Footer } from "./Footer";
-import { Header } from "./Header";
+import Link from 'next/link';
+import { ThemeToggle } from './ThemeToggle';
 
 export function PublicLayout({
   children,
@@ -10,15 +10,18 @@ export function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    // MUDANÇA: trocamos min-h-screen por min-h-[100dvh]
-    <div className="flex flex-col min-h-[100dvh] bg-gray-50">
-      <Header />
+    <div className="flex flex-col min-h-[100dvh] bg-slate-50 dark:bg-slate-900 transition-colors">
+      <header className="flex items-center justify-between px-6 h-16 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <Link href="/">
+          <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">Zello</span>
+        </Link>
+        <ThemeToggle />
+      </header>
       <main className="flex flex-col flex-grow">
         <div className="flex-grow flex items-center justify-center p-4">
-            {children}
+          {children}
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

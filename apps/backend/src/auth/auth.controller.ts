@@ -32,6 +32,8 @@ export class AuthController {
     return req.user;
   }
 
+  // TODO: Add @nestjs/throttler for rate limiting on password endpoints
+  // @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('password/forgot')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(

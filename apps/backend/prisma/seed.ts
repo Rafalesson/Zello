@@ -54,7 +54,7 @@ async function main() {
   // Create User and DoctorProfile in a single transaction
   const doctorUserWithProfile = await prisma.user.create({
     data: {
-      email: 'dr.barbara@zello.com',
+      email: 'medico@zello.com',
       phone: '11999999999',
       password: hashedPassword,
       role: 'DOCTOR',
@@ -73,7 +73,7 @@ async function main() {
   // Create Patient User and PatientProfile
   const patientUserWithProfile = await prisma.user.create({
     data: {
-      email: 'livia.santos@email.com',
+      email: 'paciente@zello.com',
       phone: '21999999999',
       password: hashedPassword,
       role: 'PATIENT',
@@ -87,6 +87,17 @@ async function main() {
     }
   });
   console.log(`Paciente de teste criado: ${patientUserWithProfile.email}`);
+
+  // Create Admin User
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@zello.com',
+      phone: '00000000000',
+      password: hashedPassword,
+      role: 'ADMIN',
+    }
+  });
+  console.log(`Admin de teste criado: ${adminUser.email}`);
 
   console.log('Seeding completo!');
 }

@@ -28,6 +28,9 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(pass, user.password))) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
+    if (!user.isActive) {
+      throw new UnauthorizedException('Sua conta foi desativada. Entre em contato com o suporte.');
+    }
     const profile = user.doctorProfile || user.patientProfile;
     const payload = {
       sub: user.id,
@@ -56,7 +59,12 @@ export class AuthService {
         passwordResetExpires: expires,
       },
     });
-    await this.mailService.sendPasswordResetEmail(user.email, token);
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email, token);
+    } catch (error) {
+      console.error('Falha ao enviar email de recuperação (não bloqueante):', error);
+      // NFR18: Falha no envio de email NÃO bloqueia o fluxo principal
+    }
   }
 
   // ==========================================================

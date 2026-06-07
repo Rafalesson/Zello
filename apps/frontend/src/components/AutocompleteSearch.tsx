@@ -12,7 +12,7 @@ type AutocompleteSearchProps<T extends Option> = {
   initialValue?: T | null;
   displayValue: (option: T) => string;
   onSearch: (query: string) => Promise<T[]>;
-  renderOption: (option: T) => JSX.Element;
+  renderOption: (option: T) => React.ReactNode;
   onSelect: (option: T | null) => void;
 };
 
@@ -87,26 +87,26 @@ export function AutocompleteSearch<T extends Option>({
 
   return (
     <div className="relative" onBlur={() => setTimeout(() => setIsFocused(false), 200)}>
-      <label htmlFor={label} className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
+      <label htmlFor={label} className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">{label}</label>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={20} />
         <input
           type="text"
           id={label}
           value={query}
           onChange={handleInputChange}
           onFocus={handleFocus}
-          className="w-full rounded-md border border-gray-300 p-3 pl-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+          className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-3 pl-10 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500 placeholder-gray-400 dark:placeholder-slate-500"
           placeholder={placeholder}
           autoComplete="off"
         />
       </div>
       {isFocused && (isLoading ? (
-            <div className="absolute z-20 w-full mt-1 p-4 bg-white border border-gray-300 rounded-md shadow-lg text-center text-gray-500">
+            <div className="absolute z-20 w-full mt-1 p-4 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg text-center text-gray-500 dark:text-slate-400">
                 Carregando...
             </div>
         ) : results.length > 0 && (
-        <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <ul className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
           {results.map((option) => (
             <li key={option.id} onMouseDown={() => handleSelect(option)}>
               {renderOption(option)}

@@ -12,6 +12,7 @@ import { DefaultTemplate } from './templates/default';
 import { ModernTemplate } from './templates/modern'; 
 import { ClassicTemplate } from './templates/classic';
 import { CheckCircle, Download, Home, Loader2 } from 'lucide-react';
+import { NumberStepper } from './common/NumberStepper';
 
 type Cid = { id: string; code: string; description: string; };
 
@@ -111,7 +112,7 @@ export function CertificateForm() {
   }
 
   function handleGoToDashboard() {
-    router.push('/dashboard');
+    router.push('/medico/dashboard');
   }
 
   return (
@@ -124,22 +125,23 @@ export function CertificateForm() {
           onSelect={handleSelectPatient}
           initialValue={data.patient} 
           renderOption={(patient) => (
-            <div className="p-3 cursor-pointer hover:bg-gray-100">
-              <p className="font-semibold text-gray-900">{patient.name}</p>
-              <p className="text-sm text-gray-500">CPF: {patient.cpf}</p>
+            <div className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
+              <p className="font-semibold text-gray-900 dark:text-slate-100">{patient.name}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">CPF: {patient.cpf}</p>
             </div>
           )}
           displayValue={(patient) => patient.name}
         />
 
         <div>
-          <label htmlFor="purpose" className="mb-2 block text-sm font-medium text-gray-700">Finalidade do Atestado</label>
+          <label htmlFor="purpose" className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">Finalidade do Atestado</label>
           <textarea 
             id="purpose" 
             rows={4} 
             value={data.purpose} 
             onChange={(e) => setData({ ...data, purpose: e.target.value })} 
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500" 
+            className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-3 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500" 
+            placeholder="Descreva o motivo do atestado..."
             required 
           />
         </div>
@@ -151,9 +153,9 @@ export function CertificateForm() {
           onSelect={handleSelectCid}
           initialValue={data.cid}
           renderOption={(cid) => (
-            <div className="p-3 cursor-pointer hover:bg-gray-100">
-              <p className="font-semibold text-gray-900">{cid.code}</p>
-              <p className="text-sm text-gray-500">{cid.description}</p>
+            <div className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600">
+              <p className="font-semibold text-gray-900 dark:text-slate-100">{cid.code}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{cid.description}</p>
             </div>
           )}
           displayValue={(cid) => `${cid.code} - ${cid.description}`}
@@ -161,26 +163,26 @@ export function CertificateForm() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="durationInDays" className="mb-2 block text-sm font-medium text-gray-700">Duração (em dias)</label>
-            <input 
-              type="number" 
-              id="durationInDays" 
-              value={data.durationInDays} 
-              onChange={(e) => setData({ ...data, durationInDays: e.target.value === '' ? '' : Number(e.target.value) })} 
-              className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500" 
+            <NumberStepper
+              id="durationInDays"
+              label="Duração (em dias)"
+              value={data.durationInDays}
+              onChange={(val) => setData({ ...data, durationInDays: val })}
+              min={1}
+              max={365}
               required
             />
           </div>
 
           <div>
-            <label htmlFor="templateId" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="templateId" className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">
               Modelo do Atestado
             </label>
             <select
               id="templateId"
               value={data.templateId}
               onChange={(e) => setData({ ...data, templateId: e.target.value })}
-              className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+              className="w-full rounded-md border border-gray-300 dark:border-slate-600 p-3 text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500"
             >
               <option value="default">Padrão</option>
               <option value="modern">Moderno</option>
@@ -190,7 +192,7 @@ export function CertificateForm() {
         </div>
 
         <div className="flex justify-end">
-          <button type="submit" className="rounded-md bg-blue-600 px-6 py-2 text-white font-semibold cursor-pointer hover:bg-blue-700">
+          <button type="submit" className="rounded-md bg-teal-600 px-6 py-2 text-white font-semibold cursor-pointer hover:bg-teal-700">
             Gerar Pré-visualização
           </button>
         </div>

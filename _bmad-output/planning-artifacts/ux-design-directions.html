@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImNotMedical - Design Directions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto space-y-12">
+        <header class="text-center mb-12">
+            <h1 class="text-3xl font-bold text-gray-900">ImNotMedical: Design Directions</h1>
+            <p class="text-gray-600 mt-2">Explore the visual approaches for the Telemedicine Cockpit</p>
+        </header>
+
+        <!-- Direction A: The Minimalist Paper -->
+        <section class="bg-slate-50 p-8 rounded-xl shadow-lg border border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-2">Direction A: Minimalist Paper (Light)</h2>
+            <div class="flex gap-4">
+                <!-- Video Area -->
+                <div class="w-3/5 bg-slate-200 rounded-lg h-96 flex items-center justify-center relative overflow-hidden shadow-inner">
+                    <div class="text-slate-500 font-medium">Video Stream (Paciente)</div>
+                    <div class="absolute bottom-4 right-4 bg-white/90 px-4 py-2 rounded-full shadow-sm text-sm text-slate-700">
+                        04:22
+                    </div>
+                </div>
+                <!-- Prontuario Area -->
+                <div class="w-2/5 bg-white rounded-lg h-96 shadow-sm border border-slate-100 p-6 flex flex-col">
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Ana Silva</h3>
+                    <p class="text-xs text-slate-500 mb-4">Motivo: Dor de Cabeça Constante</p>
+                    <div class="flex-1 bg-slate-50 rounded border border-slate-100 p-3 mb-4">
+                        <p class="text-sm text-slate-600">Área de Anotações Clínicas...</p>
+                    </div>
+                    <button class="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-md font-medium transition-colors">
+                        Emitir Receita
+                    </button>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-slate-600">Focuses on high contrast, solid backgrounds, and readability. Best for daytime clinical environments.</p>
+        </section>
+
+        <!-- Direction B: The Glass Clinic -->
+        <section class="bg-slate-100 p-8 rounded-xl shadow-xl">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-2">Direction B: Glass Clinic (Modern)</h2>
+            <div class="flex gap-4">
+                <!-- Video Area -->
+                <div class="w-3/5 bg-gradient-to-br from-slate-300 to-slate-400 rounded-2xl h-96 flex items-center justify-center relative shadow-md">
+                    <div class="text-slate-600 font-medium">Video Stream</div>
+                    <div class="absolute bottom-6 flex gap-3">
+                        <button class="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full shadow-sm border border-white/40"></button>
+                        <button class="w-10 h-10 bg-red-500/80 backdrop-blur-md rounded-full shadow-sm border border-red-400/50"></button>
+                    </div>
+                </div>
+                <!-- Prontuario Area -->
+                <div class="w-2/5 bg-white/60 backdrop-blur-xl rounded-2xl h-96 shadow-lg border border-white/50 p-6 flex flex-col">
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Ana Silva</h3>
+                    <div class="flex-1 bg-white/40 rounded-xl p-3 mb-4 border border-white/60 shadow-inner">
+                        <p class="text-sm text-slate-600">Anotações...</p>
+                    </div>
+                    <button class="w-full bg-teal-500 hover:bg-teal-600 text-white py-2.5 rounded-xl font-medium shadow-md transition-all">
+                        Emitir Receita
+                    </button>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-slate-600">Uses backdrop blurs and softer radius (glassmorphism) for a highly modern, "tech-first" appearance.</p>
+        </section>
+
+        <!-- Direction C: Cozy Dark Mode -->
+        <section class="bg-slate-900 p-8 rounded-xl shadow-2xl border border-slate-800">
+            <h2 class="text-2xl font-bold text-slate-100 mb-6 border-b border-slate-700 pb-2">Direction C: Cozy Dark Mode (Night Shift)</h2>
+            <div class="flex gap-4">
+                <!-- Video Area -->
+                <div class="w-3/5 bg-black rounded-lg h-96 flex items-center justify-center relative shadow-inner">
+                    <div class="text-slate-400 font-medium">Video Stream</div>
+                </div>
+                <!-- Prontuario Area -->
+                <div class="w-2/5 bg-slate-800 rounded-lg h-96 shadow-md border border-slate-700 p-6 flex flex-col">
+                    <h3 class="text-lg font-bold text-slate-100 mb-1">Ana Silva</h3>
+                    <p class="text-xs text-slate-400 mb-4">Motivo: Dor de Cabeça Constante</p>
+                    <div class="flex-1 bg-slate-900/50 rounded border border-slate-700 p-3 mb-4">
+                        <p class="text-sm text-slate-400">Área de Anotações Clínicas...</p>
+                    </div>
+                    <button class="w-full bg-teal-600 hover:bg-teal-500 text-white py-2 rounded-md font-medium transition-colors border border-teal-500/50">
+                        Emitir Receita
+                    </button>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-slate-400">High ergonomics for low-light environments. Minimal eye strain, maintaining the teal accents for actions.</p>
+        </section>
+
+    </div>
+</body>
+</html>

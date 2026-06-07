@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import { RefObject, useEffect } from 'react';
 
 type RevealOptions = IntersectionObserverInit;
 
-export function useScrollReveal<T extends HTMLElement>(ref: RefObject<T>, options?: RevealOptions) {
+export function useScrollReveal<T extends HTMLElement>(ref: RefObject<T | null>, options?: RevealOptions) {
   useEffect(() => {
     const node = ref.current;
     if (!node) {
