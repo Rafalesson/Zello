@@ -15,6 +15,7 @@ export default function DoctorDashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
 
@@ -33,6 +34,17 @@ export default function DoctorDashboardLayout({
       }
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarCollapsed(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (loading) {
     return (
@@ -137,11 +149,14 @@ export default function DoctorDashboardLayout({
         </Dialog>
       </Transition.Root>
 
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
-        <Sidebar />
+      <div className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 z-20 ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-64'}`}>
+        <Sidebar 
+          isCollapsed={isSidebarCollapsed} 
+          toggleCollapse={() => setIsSidebarCollapsed(prev => !prev)} 
+        />
       </div>
 
-      <div className="flex flex-1 flex-col lg:pl-64">
+      <div className={`flex flex-1 flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
         <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 shadow-sm sm:px-6 lg:hidden">
           <button
             type="button"

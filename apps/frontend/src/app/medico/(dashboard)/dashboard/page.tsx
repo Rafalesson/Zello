@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle, CalendarDays, Calendar, User, Clock } from 'lucide-react';
+import { CalendarDays, Calendar, User, Clock, CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
@@ -135,7 +135,7 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">
-            {greeting}, Dr(a). {user?.doctorProfile?.name?.split(' ')[0] || ''}
+            {greeting}, Dr(a). {user?.doctorProfile?.name?.split(' ')[0] || ''}!
           </h1>
           <p className="text-gray-500 dark:text-slate-400 mt-1">Aqui está o resumo da sua rotina clínica hoje.</p>
         </div>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
 
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-lg">
             <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-full mb-3">
-              <PlusCircle className="w-8 h-8 text-green-500 dark:text-green-400 rotate-45" />
+              <CheckCircle2 className="w-8 h-8 text-green-500 dark:text-green-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Tudo em dia!</h3>
             <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem prontuários pendentes ou assinaturas aguardando.</p>
@@ -265,30 +265,52 @@ export default function DashboardPage() {
       >
         {selectedAppointment && (
           <div className="space-y-4">
-             <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Paciente</h4>
-                <p className="text-lg font-semibold text-gray-800 dark:text-slate-100">{selectedAppointment.patientProfile?.name || 'N/A'}</p>
-             </div>
-             <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Data e Horário</h4>
-                <p className="text-gray-800 dark:text-slate-100">{formatAppointmentDate(selectedAppointment.date)}</p>
-             </div>
-             <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Status</h4>
-                <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
-                  {selectedAppointment.status}
-                </span>
+             <div className="grid grid-cols-2 gap-4">
+               <div className="col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Paciente</h4>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{selectedAppointment.patientProfile?.name || 'N/A'}</p>
+               </div>
+               <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Idade</h4>
+                  <p className="text-sm text-gray-800 dark:text-slate-100">32 anos {/* mock */}</p>
+               </div>
+               <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">CPF</h4>
+                  <p className="text-sm text-gray-800 dark:text-slate-100">123.456.789-00 {/* mock */}</p>
+               </div>
+               <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Sexo</h4>
+                  <p className="text-sm text-gray-800 dark:text-slate-100">Não informado {/* mock */}</p>
+               </div>
+               <div className="col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Data e Horário</h4>
+                  <p className="text-sm text-gray-800 dark:text-slate-100">{formatAppointmentDate(selectedAppointment.date)}</p>
+               </div>
+               <div className="col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-slate-400">Status</h4>
+                  <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
+                    {selectedAppointment.status}
+                  </span>
+               </div>
              </div>
              
-             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
-               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">
-                 Fechar
+             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-slate-700 flex justify-between gap-3">
+               <button 
+                 onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')} 
+                 className="px-4 py-2 border border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+               >
+                 Reagendar
                </button>
-               {selectedAppointment.status === 'AGENDADA' && (
-                 <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium">
-                   Iniciar Consulta
+               <div className="flex gap-2">
+                 <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                   Fechar
                  </button>
-               )}
+                 {selectedAppointment.status === 'AGENDADA' && (
+                   <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors">
+                     Iniciar Consulta
+                   </button>
+                 )}
+               </div>
              </div>
           </div>
         )}
