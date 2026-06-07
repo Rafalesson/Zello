@@ -261,7 +261,7 @@ export default function DashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Detalhes da Consulta"
-        maxWidth="max-w-md"
+        maxWidth="max-w-lg"
       >
         {selectedAppointment && (
           <div className="flex flex-col gap-5 mt-2">
