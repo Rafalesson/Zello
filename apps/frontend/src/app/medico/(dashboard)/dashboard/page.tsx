@@ -127,7 +127,11 @@ export default function DashboardPage() {
 
   const nextAppointment = useMemo(() => {
     if (!appointments) return null;
-    return appointments.find(app => app.status === 'AGENDADA') || null;
+    const now = new Date().getTime();
+    return appointments
+      .slice()
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .find(app => app.status === 'AGENDADA' && new Date(app.date).getTime() >= now) || null;
   }, [appointments]);
 
   return (
