@@ -178,7 +178,7 @@ const allTemplates = {
             <h1 class="mainTitle">Atestado Médico</h1>
             <p class="mainText">
               Atesto, para os devidos fins, que o(a) paciente <strong>{{patientName}}</strong> portador(a) do CPF nº <strong>{{patientCPF}}</strong> necessita de <strong>{{durationInDays}} dia(s)</strong> de afastamento de suas atividades
-              a partir de <strong>30/05/2026</strong>, por motivos de saúde.
+              a partir de <strong>{{startDate}}</strong>, por motivos de saúde.
             </p>
             <div class="details">
               <div class="detailItem"><span>Finalidade</span><p>{{purpose}}</p></div>
@@ -187,7 +187,7 @@ const allTemplates = {
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 30/05/2026 às 09:39:41</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
@@ -250,14 +250,14 @@ const allTemplates = {
               <strong>{{patientCPF}}</strong>, encontra-se sob meus cuidados 
               profissionais, sendo-lhe necessário o afastamento de suas atividades 
               habituais por um período de <strong>{{durationInDays}} 
-              ({{durationInWords}})</strong> dia(s), a contar de <strong>{{startDate}}</strong>.
+              ({{durationInWords}})</strong> dia(s), a contar de <strong>07/06/2026</strong>.
             </p>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em {{issueDateTime}}</p>
+              <p>Emitido em 07/06/2026 às 11:39:41</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
