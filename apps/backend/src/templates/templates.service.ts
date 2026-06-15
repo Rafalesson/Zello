@@ -250,14 +250,14 @@ const allTemplates = {
               <strong>{{patientCPF}}</strong>, encontra-se sob meus cuidados 
               profissionais, sendo-lhe necessário o afastamento de suas atividades 
               habituais por um período de <strong>{{durationInDays}} 
-              ({{durationInWords}})</strong> dia(s), a contar de <strong>14/06/2026</strong>.
+              ({{durationInWords}})</strong> dia(s), a contar de <strong>{{startDate}}</strong>.
             </p>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 14/06/2026 às 10:14:19</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
