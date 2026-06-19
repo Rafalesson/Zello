@@ -258,6 +258,7 @@ export class UserService {
         specialty: true,
         bio: true,
         profilePictureUrl: true,
+        consultationPrice: true,
         address: {
           select: {
             city: true,
@@ -286,6 +287,7 @@ export class UserService {
         specialty: doc.specialty,
         bio: doc.bio,
         profilePictureUrl: doc.profilePictureUrl,
+        consultationPrice: doc.consultationPrice,
         address: doc.address,
         nextAvailable: formatNextAvailableSlot(nextDate),
         nextAvailableDate: nextDate ? nextDate.toISOString() : null,
@@ -293,12 +295,38 @@ export class UserService {
     });
   }
 
-  async updateDoctorProfile(userId: number, data: { consultationPrice?: number }) {
-    return this.prisma.doctorProfile.update({
-      where: { userId },
-      data: {
-        consultationPrice: data.consultationPrice,
-      },
-    });
+  async updateDoctorProfile(
+    userId: number,
+    data: { name?: string; phone?: string; specialty?: string; bio?: string; consultationPrice?: number; email?: string; login?: string; crm?: string },
+  ) {
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.specialty !== undefined) updateData.specialty = data.specialty;
+    if (data.bio !== undefined) updateData.bio = data.bio;
+    if (data.consultationPrice !== undefined) updateData.consultationPrice = data.consultationPrice;
+    if (data.crm !== undefined) updateData.crm = data.crm;
+
+    const userUpdateData: Record<string, unknown> = {};
+    if (data.email !== undefined) userUpdateData.email = data.email;
+    // login field will be added to Prisma schema in Epic 7
+    // if (data.login !== undefined) userUpdateData.login = data.login;
+
+    // We use a transaction if there are updates for both the user model and doctorProfile
+    if (Object.keys(userUpdateData).length > 0) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: userUpdateData,
+      });
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      return this.prisma.doctorProfile.update({
+        where: { userId },
+        data: updateData,
+      });
+    }
+    
+    return this.prisma.doctorProfile.findUnique({ where: { userId } });
   }
 }

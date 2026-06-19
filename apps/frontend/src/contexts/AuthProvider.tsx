@@ -50,7 +50,7 @@ interface SignInData {
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  signIn: (data: SignInData) => Promise<void>;
+  signIn: (data: SignInData, options?: { redirect?: boolean }) => Promise<void>;
   signOut: () => void;
   loading: boolean;
 }
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  async function signIn({ email, password }: SignInData) {
+  async function signIn({ email, password }: SignInData, options?: { redirect?: boolean }) {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       const { access_token } = data;
@@ -97,15 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const loggedUser = profileResponse.data;
       setUser(loggedUser);
 
-      if (loggedUser.role === 'DOCTOR') {
-        router.push('/medico/dashboard');
-      } else if (loggedUser.role === 'PATIENT') {
-        router.push('/paciente/dashboard');
-      } else if (loggedUser.role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/');
+      if (options?.redirect !== false) {
+        if (loggedUser.role === 'DOCTOR') {
+          router.push('/medico/dashboard');
+        } else if (loggedUser.role === 'PATIENT') {
+          router.push('/paciente/dashboard');
+        } else if (loggedUser.role === 'ADMIN') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/');
+        }
       }
+
 
     } catch (error) {
       throw error;

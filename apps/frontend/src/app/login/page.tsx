@@ -156,11 +156,12 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 h-16 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <Link href="/">
-          <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-            Zello
-          </span>
+      <header className="flex items-center justify-between px-6 h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <Link href="/" className="flex items-center gap-2 group transition-transform hover:scale-105">
+          <div className="w-8 h-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <Stethoscope className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">Zello</span>
         </Link>
         <ThemeToggle />
       </header>

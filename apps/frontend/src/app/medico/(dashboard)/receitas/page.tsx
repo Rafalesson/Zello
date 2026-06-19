@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import Link from 'next/link';
-import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle } from 'lucide-react';
+import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle, Calendar } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { resolvePdfUrl } from '@/utils/resolvePdfUrl';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -160,170 +160,198 @@ export default function PrescriptionHistoryPage() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <tr>
-          <td colSpan={4} className="text-center p-6">
-            <div className="flex justify-center items-center">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-            </div>
-          </td>
-        </tr>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        </div>
       );
     }
     if (isError) {
       return (
-        <tr>
-          <td colSpan={4} className="text-center p-6 text-red-500">Erro ao carregar receitas. Tente novamente.</td>
-        </tr>
+        <div className="text-center p-12 text-red-500 font-medium">Erro ao carregar receitas. Tente novamente.</div>
       );
     }
     if (data?.data.length === 0) {
       return (
-        <tr>
-          <td colSpan={4} className="text-center p-6 text-gray-500 dark:text-slate-400">Nenhuma receita encontrada.</td>
-        </tr>
+        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+          <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-gray-300 dark:text-slate-600" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">Nenhuma receita encontrada</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+            Não encontramos receitas com os filtros aplicados.
+          </p>
+        </div>
       );
     }
 
-    return data?.data.map((cert) => {
-      const certId = String(cert.id);
-      return (
-        <tr key={cert.id} className={selectedIds.includes(certId) ? 'bg-blue-50 dark:bg-slate-700' : ''}>
-        <td className="px-6 py-4">
-          <input
-            type="checkbox"
-            checked={selectedIds.includes(certId)}
-            onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
-          {cert.patient?.patientProfile?.name || 'N/A'}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
-          {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-          <button
-            onClick={() => handleOpenPreview(cert.pdfUrl)}
-            className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center"
-            title="Visualizar Receita"
-          >
-            <Eye className="mr-1 h-4 w-4" />
-            Visualizar
-          </button>
-          <a
-            href={resolvePdfUrl(cert.pdfUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 inline-flex items-center"
-            title="Baixar Receita"
-          >
-            <Download className="mr-1 h-4 w-4" />
-            Baixar
-          </a>
-          <button
-            onClick={() => openSingleDeleteModal(cert.id)}
-            disabled={deleteMutation.isPending}
-            className="text-red-600 hover:text-red-900 inline-flex items-center disabled:opacity-50"
-            title="Excluir Receita"
-          >
-            <Trash2 className="mr-1 h-4 w-4" />
-            Excluir
-          </button>
-        </td>
-        </tr>
-      );
-    });
+    return (
+      <div className="divide-y divide-gray-100 dark:divide-slate-700/50">
+        {data?.data.map((cert) => {
+          const certId = String(cert.id);
+          const isSelected = selectedIds.includes(certId);
+          const patientName = cert.patient?.patientProfile?.name || 'N/A';
+
+          return (
+            <div 
+              key={cert.id} 
+              className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group gap-4 sm:gap-0 ${isSelected ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}
+            >
+              {/* Checkbox e Paciente Info */}
+              <div className="flex items-center gap-4 sm:w-2/5">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-green-500 cursor-pointer transition-all"
+                />
+                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+                  {patientName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                    {patientName}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Paciente</p>
+                </div>
+              </div>
+
+              {/* Data */}
+              <div className="flex items-center gap-2 sm:w-1/4">
+                <div className="p-1.5 bg-gray-50 dark:bg-slate-800 rounded-md border border-gray-100 dark:border-slate-700">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                </div>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+
+              {/* Ações */}
+              <div className="flex items-center gap-2 sm:w-auto sm:justify-end">
+                <button
+                  onClick={() => handleOpenPreview(cert.pdfUrl)}
+                  className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                  title="Visualizar"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <a
+                  href={resolvePdfUrl(cert.pdfUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
+                  title="Baixar"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+                <button
+                  onClick={() => openSingleDeleteModal(cert.id)}
+                  disabled={deleteMutation.isPending}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
+                  title="Excluir"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">Receitas</h1>
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Receitas</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie, visualize e baixe as receitas emitidas para seus pacientes.</p>
+        </div>
         <Link 
           href="/medico/receitas/novo"
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-sm hover:shadow-md"
         >
           <PlusCircle className="w-5 h-5" />
           Emitir Receita
         </Link>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <input
-            type="text"
+      {/* Controles: Busca e Batch Delete */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
+          <input 
+            type="text" 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Buscar por nome do paciente..."
-            className="w-full p-3 pl-10 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500"
+            placeholder="Buscar por nome do paciente..." 
+            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all dark:text-slate-200 shadow-sm"
           />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+        </div>
+
+        <div className="flex items-center gap-3">
+           {selectedIds.length > 0 && (
+             <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl border border-red-100 dark:border-red-900/30">
+               <span className="text-sm font-semibold">{selectedIds.length} selecionado(s)</span>
+               <button
+                 onClick={openBatchDeleteModal}
+                 disabled={batchDeleteMutation.isPending}
+                 className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+               >
+                 <Trash2 className="w-3.5 h-3.5" />
+                 Excluir
+               </button>
+             </div>
+           )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-          <thead className="bg-gray-50 dark:bg-slate-800/80">
-            <tr>
-              {/* O botão de exclusão em lote agora vive aqui, ao lado do checkbox */}
-              <th className="px-6 py-3 text-left">
-                <div className="flex items-center gap-x-3">
-                  <input
-                    type="checkbox"
-                    ref={headerCheckboxRef}
-                    onChange={handleSelectAll}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  {selectedIds.length > 0 && (
-                    <button
-                      onClick={openBatchDeleteModal}
-                      className="p-1 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
-                      disabled={batchDeleteMutation.isPending}
-                      title={`Excluir ${selectedIds.length} receita(s)`}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Paciente</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Data de Emissão</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-            {renderContent()}
-          </tbody>
-        </table>
-      </div>
+      {/* Lista de Receitas (Estilo SaaS Moderno) */}
+      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700/60 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
+        {/* Header da Lista */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/80">
+          <div className="flex items-center gap-4">
+            <input
+              type="checkbox"
+              ref={headerCheckboxRef}
+              onChange={handleSelectAll}
+              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-green-500 cursor-pointer transition-all"
+            />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Receitas Emitidas</span>
+          </div>
+        </div>
 
-      {data && data.total > 0 && (
-        <div className="mt-6 flex justify-between items-center">
-            <div>
-            <p className="text-sm text-gray-700 dark:text-slate-300">
-                Página <span className="font-medium">{data.page}</span> de <span className="font-medium">{data.totalPages}</span>
+        {/* Corpo da Lista */}
+        <div className="flex-1">
+          {renderContent()}
+        </div>
+        
+        {/* Pagination Footer */}
+        {data && data.total > 0 && (
+          <div className="p-4 border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+              Página <span className="text-slate-900 dark:text-white font-bold">{data.page}</span> de <span className="text-slate-900 dark:text-white font-bold">{data.totalPages}</span>
             </p>
-            </div>
             <div className="flex gap-2">
-            <button
+              <button
                 onClick={() => setPage(p => Math.max(p - 1, 1))}
                 disabled={page === 1 || isLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
-            >
+                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
+              >
                 Anterior
-            </button>
-            <button
+              </button>
+              <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={page === data.totalPages || isLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
-            >
-                Próximo
-            </button>
+                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                Próxima
+              </button>
             </div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <Modal
         isOpen={isPreviewModalOpen}

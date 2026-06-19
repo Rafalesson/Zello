@@ -2,26 +2,23 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, Video, Building2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export function HeroSection() {
   const router = useRouter();
-  const [type, setType] = useState<'teleconsulta' | 'local'>('teleconsulta');
   const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!query) return;
     const params = new URLSearchParams();
-    if (type) params.append('type', type);
-    if (query) params.append('q', query);
-    if (location && type === 'local') params.append('location', location);
-    
+    params.append('q', query);
     router.push(`/medicos?${params.toString()}`);
   };
 
   return (
-    <section id="inicio" className="relative flex min-h-[100dvh] w-full items-center overflow-hidden bg-slate-900 text-white">
+    <section id="inicio" className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-slate-900 text-white">
+      {/* Background Video */}
       <div className="absolute inset-0">
         <video
           src="/assets/home_zello_video.mp4"
@@ -29,93 +26,72 @@ export function HeroSection() {
           loop
           muted
           playsInline
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover scale-105"
         />
-        <div className="absolute inset-0 bg-black/70" />
+        {/* Advanced Gradient Overlay for better contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/95 via-slate-900/70 to-slate-900" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-6xl px-6 py-24 sm:py-32 lg:px-8">
-        <div className="flex flex-col gap-12 text-center md:text-left">
-          <div className="space-y-6 max-w-3xl mx-auto md:mx-0">
-            <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-1 text-sm font-medium uppercase tracking-wide text-teal-200 backdrop-blur">
-              Saúde sem Fronteiras
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 py-24 sm:py-32 lg:px-8">
+        <div className="flex flex-col items-center text-center gap-10 sm:gap-12">
+          
+          <div className="space-y-6 sm:space-y-8 max-w-3xl mx-auto">
+            <span className="inline-flex items-center justify-center rounded-full bg-teal-500/10 border border-teal-400/20 px-4 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-teal-300 backdrop-blur-md shadow-[0_0_30px_rgba(20,184,166,0.15)] animate-in fade-in slide-in-from-bottom-4 duration-700">
+              Saúde sem fronteiras
             </span>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-              Agende agora sua consulta
+            
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl drop-shadow-xl animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
+              Saúde de ponta.<br className="hidden sm:block" />{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-emerald-400">
+                Onde você estiver.
+              </span>
             </h1>
-            <p className="text-lg leading-8 text-slate-100/90 sm:text-xl">
-              Mais de 950 especialistas de saúde estão prontos para te atender. Agende sua consulta online com segurança e praticidade.
+            
+            <p className="text-base sm:text-lg md:text-xl leading-relaxed text-slate-200 font-medium max-w-2xl mx-auto drop-shadow-md animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+              Conecte-se instantaneamente com os melhores especialistas do país e realize sua consulta online com máxima segurança.
             </p>
           </div>
 
-          {/* Search Box */}
-          <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow-2xl dark:shadow-none dark:ring-1 dark:ring-slate-700 sm:p-6 transition-colors duration-200 mx-auto w-full md:mx-0 text-left">
-            {/* Tabs */}
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setType('local')}
-                className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all ${
-                  type === 'local' 
-                    ? 'bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800' 
-                    : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Building2 className="h-4 w-4" />
-                No local
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('teleconsulta')}
-                className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all ${
-                  type === 'teleconsulta' 
-                    ? 'bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800' 
-                    : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Video className="h-4 w-4" />
-                Teleconsulta
-              </button>
-            </div>
-
-            {/* Search Form */}
-            <form onSubmit={handleSearch} className="flex flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                  <Search className="h-5 w-5 text-slate-400" />
+          {/* Floating Search Box */}
+          <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500">
+            <form 
+              onSubmit={handleSearch} 
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/10 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/50 p-2 sm:p-3 rounded-3xl sm:rounded-[2rem] shadow-2xl"
+            >
+              <div className="relative flex-1 w-full">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 sm:pl-6">
+                  <Search className="h-5 w-5 sm:h-6 sm:w-6 text-white/60" />
                 </div>
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Especialidade, doença ou nome do médico"
-                  className="block w-full rounded-xl border-0 py-3.5 pl-12 pr-4 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 dark:bg-slate-900 dark:text-white dark:ring-slate-700 dark:focus:ring-teal-500 sm:text-base sm:leading-6 transition-all outline-none"
+                  placeholder="Qual especialidade você busca?"
+                  className="block w-full rounded-[1.5rem] sm:rounded-3xl border-0 py-4 sm:py-5 pl-12 sm:pl-16 pr-4 sm:pr-6 text-white bg-transparent placeholder:text-white/60 focus:ring-0 text-base sm:text-lg font-medium outline-none transition-all"
                 />
               </div>
 
-              {type === 'local' && (
-                <div className="relative md:w-64">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                    <MapPin className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Cidade ou região"
-                    className="block w-full rounded-xl border-0 py-3.5 pl-12 pr-4 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 dark:bg-slate-900 dark:text-white dark:ring-slate-700 dark:focus:ring-teal-500 sm:text-base sm:leading-6 transition-all outline-none"
-                  />
-                </div>
-              )}
-
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-teal-500 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 md:w-auto"
+                className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl sm:rounded-full bg-teal-500 px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-bold text-white shadow-[0_0_20px_rgba(20,184,166,0.3)] transition-all hover:bg-teal-400 hover:scale-[1.02]"
               >
-                <Search className="h-4 w-4" />
-                Pesquisar
+                Buscar Médico
               </button>
             </form>
+            
+            <div className="mt-6 sm:mt-8 flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-xs sm:text-sm font-semibold text-white/70">
+              <span className="uppercase tracking-widest text-[10px] sm:text-xs mr-1 sm:mr-2 opacity-70 w-full sm:w-auto mb-2 sm:mb-0">Mais buscados:</span>
+              {['Clínico Geral', 'Psicologia', 'Nutrição', 'Dermatologia'].map(tag => (
+                <button 
+                  key={tag} 
+                  type="button" 
+                  onClick={() => { setQuery(tag); }} 
+                  className="hover:text-white hover:bg-white/15 px-3 sm:px-4 py-1.5 rounded-full border border-white/10 transition-all backdrop-blur-sm"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
 
         </div>

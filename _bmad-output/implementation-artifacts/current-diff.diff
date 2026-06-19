@@ -1,0 +1,1826 @@
+diff --git a/_bmad-output/implementation-artifacts/2-5-doctors-appointment-dashboard.md b/_bmad-output/implementation-artifacts/2-5-doctors-appointment-dashboard.md
+index b8b35cd..52d885c 100644
+--- a/_bmad-output/implementation-artifacts/2-5-doctors-appointment-dashboard.md
++++ b/_bmad-output/implementation-artifacts/2-5-doctors-appointment-dashboard.md
+@@ -1,6 +1,6 @@
+ # Story 2.5: Doctor's Appointment Dashboard
+ 
+-Status: ready-for-dev
++Status: done
+ 
+ <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+ 
+@@ -19,17 +19,17 @@ so that I can organize my day and prepare for my patients.
+ 
+ ## Tasks / Subtasks
+ 
+-- [ ] **Task 1: Criar Serviço e Endpoint no Backend** (AC: 3, 4)
+-  - [ ] 1.1 Adicionar o método `getDoctorAppointments(doctorProfileId: number)` em `apps/backend/src/appointment/appointment.service.ts`. Ele deve buscar consultas associadas ao médico, incluir o `patientProfile`, e ordenar de forma ascendente por `date`.
+-  - [ ] 1.2 Criar rota `GET /appointments/doctor` em `apps/backend/src/appointment/appointment.controller.ts` protegida por `AuthGuard`, `RolesGuard` e restrita à role `DOCTOR` (`@Roles('DOCTOR')`). Ela deve extrair o ID do perfil médico através de `req.user.doctorProfile?.id` e lançar `ForbiddenException` caso o perfil não seja encontrado.
+-- [ ] **Task 2: Implementar Testes Unitários no Backend** (AC: 3, 4)
+-  - [ ] 2.1 Adicionar bloco de testes unitários em `apps/backend/src/appointment/appointment.service.spec.ts` para verificar o retorno correto e ordenado de `getDoctorAppointments` utilizando mocks do Prisma.
+-- [ ] **Task 3: Integrar e Atualizar UI do Dashboard Médico no Frontend** (AC: 1, 2, 3, 4)
+-  - [ ] 3.1 Em `apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx`, declarar a consulta das consultas do médico usando o hook `useQuery` com a chave `['doctorAppointments']` consumindo `GET /appointments/doctor`.
+-  - [ ] 3.2 Substituir a contagem estática ("07") no card "Consultas Hoje" por uma contagem dinâmica calculada a partir das consultas recebidas cuja data corresponde ao dia atual (fuso horário local de Brasília).
+-  - [ ] 3.3 Inserir uma seção visualmente elegante ("Próximas Consultas") abaixo dos cards principais para listar cronologicamente as consultas.
+-  - [ ] 3.4 Exibir para cada consulta: o nome do paciente (`appointment.patientProfile.name`), a data/hora formatada no formato brasileiro (ex: `dd/MM/yyyy às HH:mm`) e um badge de status estilizado (`AGENDADA` = amarelo/âmbar, `CANCELADA` = vermelho, `REALIZADA` = verde).
+-  - [ ] 3.5 Adicionar estados de carregamento (loading skeleton) e tratamento elegante caso não existam consultas agendadas (empty state com ícone da Lucide, ex: `CalendarDays`).
++- [x] **Task 1: Criar Serviço e Endpoint no Backend** (AC: 3, 4)
++  - [x] 1.1 Adicionar o método `getDoctorAppointments(doctorProfileId: number)` em `apps/backend/src/appointment/appointment.service.ts`. Ele deve buscar consultas associadas ao médico, incluir o `patientProfile`, e ordenar de forma ascendente por `date`.
++  - [x] 1.2 Criar rota `GET /appointments/doctor` em `apps/backend/src/appointment/appointment.controller.ts` protegida por `AuthGuard`, `RolesGuard` e restrita à role `DOCTOR` (`@Roles('DOCTOR')`). Ela deve extrair o ID do perfil médico através de `req.user.doctorProfile?.id` e lançar `ForbiddenException` caso o perfil não seja encontrado.
++- [x] **Task 2: Implementar Testes Unitários no Backend** (AC: 3, 4)
++  - [x] 2.1 Adicionar bloco de testes unitários em `apps/backend/src/appointment/appointment.service.spec.ts` para verificar o retorno correto e ordenado de `getDoctorAppointments` utilizando mocks do Prisma.
++- [x] **Task 3: Integrar e Atualizar UI do Dashboard Médico no Frontend** (AC: 1, 2, 3, 4)
++  - [x] 3.1 Em `apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx`, declarar a consulta das consultas do médico usando o hook `useQuery` com a chave `['doctorAppointments']` consumindo `GET /appointments/doctor`.
++  - [x] 3.2 Substituir a contagem estática ("07") no card "Consultas Hoje" por uma contagem dinâmica calculada a partir das consultas recebidas cuja data corresponde ao dia atual (fuso horário local de Brasília).
++  - [x] 3.3 Inserir uma seção visualmente elegante ("Próximas Consultas") abaixo dos cards principais para listar cronologicamente as consultas.
++  - [x] 3.4 Exibir para cada consulta: o nome do paciente (`appointment.patientProfile.name`), a data/hora formatada no formato brasileiro (ex: `dd/MM/yyyy às HH:mm`) e um badge de status estilizado (`AGENDADA` = amarelo/âmbar, `CANCELADA` = vermelho, `REALIZADA` = verde).
++  - [x] 3.5 Adicionar estados de carregamento (loading skeleton) e tratamento elegante caso não existam consultas agendadas (empty state com ícone da Lucide, ex: `CalendarDays`).
+ 
+ ## Dev Notes
+ 
+@@ -59,6 +59,26 @@ Gemini 3.5 Flash (High)
+ 
+ ### Debug Log References
+ 
++- Sucesso na execução dos testes de unidade com `npm run test --workspace=backend -- appointment.service.spec.ts`.
++- Validação estática de tipos bem-sucedida com `npx tsc --noEmit` no frontend.
++
+ ### Completion Notes List
+ 
++- Método `getDoctorAppointments` implementado no `AppointmentService` do backend, com ordenação cronológica e carregamento de relações do paciente.
++- Rota `GET /appointments/doctor` protegida por `AuthGuard`, `RolesGuard` e `@Roles('DOCTOR')` implementada no backend.
++- Hook `useQuery` com chave `['doctorAppointments']` adicionado ao frontend.
++- Lista cronológica "Próximas Consultas" inserida ao lado de "Documentos Emitidos Recentemente" com carregamento por esqueleto visual e tela amigável para listas vazias.
++- Badges de status coloridos (`AGENDADA`, `CANCELADA`, `REALIZADA`) e formatação de datas em fuso horário de Brasília (UTC-3) finalizadas.
++- O card "Consultas Hoje" agora calcula o total de consultas do dia dinamicamente e com fuso horário correto.
++
+ ### File List
++
++- `apps/backend/src/appointment/appointment.service.ts`
++- `apps/backend/src/appointment/appointment.controller.ts`
++- `apps/backend/src/appointment/appointment.service.spec.ts`
++- `apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx`
++
++### Review Findings
++
++- [x] [Review][Decision] Escopo de "Próximas Consultas" — O backend e frontend carregam todo o histórico de consultas (sem limite ou paginação). Para a lista de "Próximas Consultas", devemos filtrar na query do backend para trazer apenas consultas a partir da data atual, ou manter todas e implementar paginação virtualizada no frontend?
++- [x] [Review][Patch] Otimização de Performance no Contador — A filtragem para "Consultas Hoje" no frontend mapeia toda a lista (potencialmente pesada) em cada render/memo. O cálculo ficará mais leve assim que a API for corrigida.
+diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
+index 56fc274..a5272bc 100644
+--- a/_bmad-output/implementation-artifacts/sprint-status.yaml
++++ b/_bmad-output/implementation-artifacts/sprint-status.yaml
+@@ -35,7 +35,7 @@
+ # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+ 
+ generated: 2026-05-12T20:07:23-03:00
+-last_updated: 2026-06-06T23:06:00-03:00
++last_updated: 2026-06-07T14:52:00-03:00
+ project: ImNotMedical
+ project_key: NOKEY
+ tracking_system: file-system
+@@ -58,7 +58,7 @@ development_status:
+   2-3-appointment-booking-with-calendar-strip: done
+   2-4-booking-confirmation-notifications: done
+   2-5-doctors-appointment-dashboard: done
+-  2-6-appointment-cancellation-flow: backlog
++  2-6-appointment-cancellation-flow: review
+   2-7-dashboard-redesign-and-document-migration: ready-for-dev
+   epic-2-retrospective: optional
+ 
+diff --git a/_bmad-output/planning-artifacts/epics.md b/_bmad-output/planning-artifacts/epics.md
+index 88cde5c..cf5b4dc 100644
+--- a/_bmad-output/planning-artifacts/epics.md
++++ b/_bmad-output/planning-artifacts/epics.md
+@@ -25,6 +25,7 @@ This document provides the complete epic and story breakdown for ImNotMedical, d
+ - **FR10:** Paciente pode visualizar o perfil público do médico (foto, nome, CRM, especialidade, bio)
+ - **FR11:** Paciente pode agendar uma consulta em um slot disponível do médico
+ - **FR12:** Paciente pode cancelar uma consulta agendada
++- **FR12b:** Médico pode cancelar ou reagendar uma consulta agendada
+ - **FR13:** Médico pode visualizar suas consultas agendadas no dashboard
+ - **FR14:** Sistema envia notificação por email de confirmação e lembrete de consulta
+ - **FR15:** Paciente pode preencher questionário de pré-triagem com informações clínicas antes da consulta
+@@ -131,6 +132,7 @@ This document provides the complete epic and story breakdown for ImNotMedical, d
+ - **FR10:** Epic 1 - Perfil público do médico
+ - **FR11:** Epic 2 - Agendar consulta
+ - **FR12:** Epic 2 - Cancelar consulta
++- **FR12b:** Epic 2 - Médico cancelar/reagendar consulta
+ - **FR13:** Epic 2 - Médico visualizar agenda
+ - **FR14:** Epic 2 - Notificação por email
+ - **FR15:** Epic 3 - Preencher pré-triagem
+@@ -174,7 +176,7 @@ Pacientes e médicos podem criar contas, gerenciar perfis e acessar a plataforma
+ 
+ ### Epic 2: Scheduling & Availability (Agendamento de Consultas)
+ Médicos podem publicar suas agendas e pacientes podem buscar especialistas e marcar horários, estabelecendo a conexão inicial no marketplace.
+-**FRs covered:** FR8, FR9, FR11, FR12, FR13, FR14
++**FRs covered:** FR8, FR9, FR11, FR12, FR12b, FR13, FR14
+ 
+ ### Epic 3: Patient Pre-Consultation (Check-in & Preparação)
+ Pacientes podem se preparar para a consulta preenchendo a triagem, aceitando os termos legais e testando seus dispositivos antes de entrar na sala de espera (redução de atrito técnico e compliance).
+@@ -393,6 +395,23 @@ So that I can free up the slot if I am unable to attend.
+ **Then** the status of the consultation is updated to `cancelada` (FR12, FR21)
+ **And** the time slot becomes available again for other patients to book.
+ 
++### Story 2.7: Doctor Cancellation & Rescheduling Flow
++
++As a Doctor,
++I want to be able to cancel or reschedule an upcoming consultation,
++So that I can manage my availability if unforeseen events occur.
++
++**Acceptance Criteria:**
++
++**Given** a doctor viewing their dashboard or appointment details
++**When** they choose to cancel an appointment
++**Then** the status is updated to `cancelada` and the patient is notified (FR12b)
++
++**Given** a doctor needing to reschedule
++**When** they initiate the rescheduling flow and provide a justification
++**Then** the patient is notified of the proposed new slot or cancellation (FR12b)
++**And** the original time slot becomes available.
++
+ ## Epic 3: Patient Pre-Consultation (Check-in & Preparação)
+ 
+ Pacientes podem se preparar para a consulta preenchendo a triagem, aceitando os termos legais e testando seus dispositivos antes de entrar na sala de espera (redução de atrito técnico e compliance).
+diff --git a/apps/backend/src/appointment/appointment.controller.ts b/apps/backend/src/appointment/appointment.controller.ts
+index 0a7740c..c2d68ae 100644
+--- a/apps/backend/src/appointment/appointment.controller.ts
++++ b/apps/backend/src/appointment/appointment.controller.ts
+@@ -1,4 +1,4 @@
+-import { Controller, Post, Body, UseGuards, Req, HttpCode, HttpStatus, Get, Param, Query, BadRequestException } from '@nestjs/common';
++import { Controller, Post, Body, UseGuards, Req, HttpCode, HttpStatus, Get, Param, Query, BadRequestException, ForbiddenException, Patch } from '@nestjs/common';
+ import { AppointmentService } from './appointment.service';
+ import { CreateAppointmentDto } from './dto/create-appointment.dto';
+ import { AuthGuard } from '../auth/auth.guard';
+@@ -9,6 +9,19 @@ import { Roles } from '../auth/roles.decorator';
+ export class AppointmentController {
+   constructor(private readonly appointmentService: AppointmentService) {}
+ 
++  @Get('doctor')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('DOCTOR')
++  async getDoctorAppointments(@Req() req: any) {
++    const doctorProfileId = req.user.doctorProfile?.id;
++    if (!doctorProfileId) {
++      throw new ForbiddenException(
++        'Perfil de médico não encontrado para este usuário.',
++      );
++    }
++    return this.appointmentService.getDoctorAppointments(doctorProfileId);
++  }
++
+   @Get('availability/:doctorId')
+   async getAvailableSlots(
+     @Param('doctorId') doctorId: string,
+@@ -28,4 +41,31 @@ export class AppointmentController {
+     const userId = req.user.id;
+     return this.appointmentService.create(userId, createAppointmentDto);
+   }
++
++  @Get('patient')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT')
++  async getPatientAppointments(@Req() req: any) {
++    const patientProfileId = req.user.patientProfile?.id;
++    if (!patientProfileId) {
++      throw new ForbiddenException(
++        'Perfil de paciente não encontrado para este usuário.',
++      );
++    }
++    return this.appointmentService.getPatientAppointments(patientProfileId);
++  }
++
++  @Patch(':id/cancel')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT')
++  async cancelAppointment(@Req() req: any, @Param('id') id: string) {
++    const patientProfileId = req.user.patientProfile?.id;
++    if (!patientProfileId) {
++      throw new ForbiddenException(
++        'Perfil de paciente não encontrado para este usuário.',
++      );
++    }
++    return this.appointmentService.cancelAppointment(Number(id), patientProfileId);
++  }
+ }
++
+diff --git a/apps/backend/src/appointment/appointment.service.spec.ts b/apps/backend/src/appointment/appointment.service.spec.ts
+index ed65bce..aaccec2 100644
+--- a/apps/backend/src/appointment/appointment.service.spec.ts
++++ b/apps/backend/src/appointment/appointment.service.spec.ts
+@@ -14,14 +14,18 @@ describe('AppointmentService', () => {
+       findUnique: jest.fn(),
+     },
+     appointment: {
++      findUnique: jest.fn(),
+       findFirst: jest.fn(),
+       create: jest.fn(),
++      findMany: jest.fn(),
++      update: jest.fn(),
+     },
+   };
+ 
+   const mockMailService = {
+     sendBookingConfirmationToPatient: jest.fn().mockResolvedValue(undefined),
+     sendBookingConfirmationToDoctor: jest.fn().mockResolvedValue(undefined),
++    sendCancellationToDoctor: jest.fn().mockResolvedValue(undefined),
+   };
+ 
+   beforeEach(async () => {
+@@ -164,4 +168,132 @@ describe('AppointmentService', () => {
+       });
+     });
+   });
++
++  describe('getDoctorAppointments', () => {
++    it('should successfully get and return appointments for a doctor sorted by date', async () => {
++      const doctorProfileId = 1;
++      const expectedAppointments = [
++        {
++          id: 1,
++          doctorProfileId,
++          patientProfileId: 10,
++          date: new Date('2026-06-10T10:00:00.000Z'),
++          status: 'AGENDADA',
++          patientProfile: { id: 10, name: 'John Doe' },
++        },
++        {
++          id: 2,
++          doctorProfileId,
++          patientProfileId: 11,
++          date: new Date('2026-06-10T11:00:00.000Z'),
++          status: 'AGENDADA',
++          patientProfile: { id: 11, name: 'Jane Doe' },
++        },
++      ];
++
++      mockPrismaService.appointment.findMany.mockResolvedValue(expectedAppointments);
++
++      const result = await service.getDoctorAppointments(doctorProfileId);
++
++      expect(result).toEqual(expectedAppointments);
++      expect(mockPrismaService.appointment.findMany).toHaveBeenCalledWith({
++        where: {
++          doctorProfileId,
++          date: {
++            gte: expect.any(Date),
++          },
++        },
++        include: {
++          patientProfile: true,
++        },
++        orderBy: {
++          date: 'asc',
++        },
++      });
++    });
++  });
++
++  describe('getPatientAppointments', () => {
++    it('should successfully get and return appointments for a patient sorted by date', async () => {
++      const patientProfileId = 2;
++      const expectedAppointments = [
++        {
++          id: 1,
++          doctorProfileId: 1,
++          patientProfileId,
++          date: new Date('2026-06-10T10:00:00.000Z'),
++          status: 'AGENDADA',
++          doctorProfile: { id: 1, name: 'Dr. Test', specialty: 'Cardiologia' },
++        },
++      ];
++
++      mockPrismaService.appointment.findMany.mockResolvedValue(expectedAppointments);
++
++      const result = await service.getPatientAppointments(patientProfileId);
++
++      expect(result).toEqual(expectedAppointments);
++      expect(mockPrismaService.appointment.findMany).toHaveBeenCalledWith({
++        where: { patientProfileId },
++        include: { doctorProfile: true },
++        orderBy: { date: 'asc' },
++      });
++    });
++  });
++
++  describe('cancelAppointment', () => {
++    const appointmentId = 1;
++    const patientProfileId = 2;
++
++    it('should throw ForbiddenException if appointment does not belong to patient', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId: 999, // different patient
++      });
++
++      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
++        'Você não tem permissão para cancelar esta consulta.'
++      );
++    });
++
++    it('should throw BadRequestException if appointment is in the past', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId,
++        date: new Date(new Date().getTime() - 10000), // past
++      });
++
++      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
++        'Não é possível cancelar uma consulta que já passou.'
++      );
++    });
++
++    it('should cancel appointment and send email', async () => {
++      const futureDate = new Date(new Date().getTime() + 86400000); // tomorrow
++      const appointmentMock = {
++        id: appointmentId,
++        patientProfileId,
++        date: futureDate,
++        status: 'AGENDADA',
++        patientProfile: { name: 'Paciente Test' },
++        doctorProfile: { user: { email: 'doctor@test.com' }, name: 'Dr. Test' },
++      };
++
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointmentMock);
++      mockPrismaService.appointment.update.mockResolvedValue({ ...appointmentMock, status: 'CANCELADA' });
++
++      const result = await service.cancelAppointment(appointmentId, patientProfileId);
++
++      expect(result.status).toBe('CANCELADA');
++      expect(mockPrismaService.appointment.update).toHaveBeenCalledWith({
++        where: { id: appointmentId },
++        data: { status: 'CANCELADA' },
++      });
++      expect(mockMailService.sendCancellationToDoctor).toHaveBeenCalledWith(
++        'doctor@test.com',
++        'Dr. Test',
++        'Paciente Test',
++        futureDate
++      );
++    });
++  });
+ });
+diff --git a/apps/backend/src/appointment/appointment.service.ts b/apps/backend/src/appointment/appointment.service.ts
+index 83e3803..11d03a5 100644
+--- a/apps/backend/src/appointment/appointment.service.ts
++++ b/apps/backend/src/appointment/appointment.service.ts
+@@ -1,4 +1,4 @@
+-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
++import { Injectable, BadRequestException, Logger, ForbiddenException } from '@nestjs/common';
+ import { PrismaService } from '../prisma/prisma.service';
+ import { CreateAppointmentDto } from './dto/create-appointment.dto';
+ import { DomainErrorCode } from '@imnotmedical/shared';
+@@ -159,4 +159,82 @@ export class AppointmentService {
+ 
+     return appointment;
+   }
++
++  async getDoctorAppointments(doctorProfileId: number) {
++    const startOfToday = new Date();
++    startOfToday.setHours(0, 0, 0, 0);
++
++    return this.prisma.appointment.findMany({
++      where: {
++        doctorProfileId,
++        date: {
++          gte: startOfToday,
++        },
++      },
++      include: {
++        patientProfile: true,
++      },
++      orderBy: {
++        date: 'asc',
++      },
++    });
++  }
++
++  async getPatientAppointments(patientProfileId: number) {
++    return this.prisma.appointment.findMany({
++      where: {
++        patientProfileId,
++      },
++      include: {
++        doctorProfile: true,
++      },
++      orderBy: {
++        date: 'asc',
++      },
++    });
++  }
++
++  async cancelAppointment(appointmentId: number, patientProfileId: number) {
++    const appointment = await this.prisma.appointment.findUnique({
++      where: { id: appointmentId },
++      include: {
++        doctorProfile: { include: { user: true } },
++        patientProfile: true,
++      },
++    });
++
++    if (!appointment) {
++      throw new BadRequestException('Consulta não encontrada.');
++    }
++
++    if (appointment.patientProfileId !== patientProfileId) {
++      throw new ForbiddenException('Você não tem permissão para cancelar esta consulta.');
++    }
++
++    if (appointment.date.getTime() < new Date().getTime()) {
++      throw new BadRequestException('Não é possível cancelar uma consulta que já passou.');
++    }
++
++    const updatedAppointment = await this.prisma.appointment.update({
++      where: { id: appointmentId },
++      data: { status: 'CANCELADA' },
++    });
++
++    this.logger.log(`APPOINTMENT CANCELLED: ${appointmentId} by patient ${patientProfileId}`);
++
++    // Fire and forget email to doctor
++    if (appointment.doctorProfile?.user?.email) {
++      this.mailService
++        .sendCancellationToDoctor(
++          appointment.doctorProfile.user.email,
++          appointment.doctorProfile.name || 'Médico',
++          appointment.patientProfile.name || 'Paciente',
++          appointment.date,
++        )
++        .catch((err) => this.logger.error('Erro silencioso ao enviar email de cancelamento ao médico:', err));
++    }
++
++    return updatedAppointment;
++  }
+ }
++
+diff --git a/apps/backend/src/mail/mail.service.ts b/apps/backend/src/mail/mail.service.ts
+index dfd7f4b..2b1e599 100644
+--- a/apps/backend/src/mail/mail.service.ts
++++ b/apps/backend/src/mail/mail.service.ts
+@@ -173,4 +173,52 @@ export class MailService {
+       this.logger.error('Erro ao enviar e-mail para o medico:', error);
+     }
+   }
++
++  async sendCancellationToDoctor(
++    doctorEmail: string,
++    doctorName: string,
++    patientName: string,
++    date: Date,
++  ): Promise<void> {
++    if (!this.transporter && this.transporterPromise) {
++      await this.transporterPromise;
++    }
++
++    if (!this.transporter) {
++      this.logger.error('Transporter nao inicializado! Nao foi possivel enviar confirmacao para o medico.');
++      return;
++    }
++
++    if (isNaN(date.getTime())) {
++      this.logger.error('Data invalida para o envio do e-mail de cancelamento do medico.');
++      return;
++    }
++
++    try {
++      const formattedDate = formatInTimeZone(date, 'America/Sao_Paulo', "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
++
++      const info = await this.transporter.sendMail({
++        from: '"Equipe Zello" <nao-responda@zello.com.br>',
++        to: doctorEmail,
++        subject: 'Consulta Cancelada - Zello',
++        html: `
++          <div style="font-family: sans-serif; padding: 20px; color: #333;">
++            <h2 style="color: #ef4444;">Consulta Cancelada</h2>
++            <p>Olá, <strong>Dr(a). ${doctorName}</strong>,</p>
++            <p>A consulta com o paciente <strong>${patientName}</strong> foi cancelada pelo paciente.</p>
++            <p style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #ef4444; margin: 20px 0;">
++              📅 <strong>Data e Horário:</strong> ${formattedDate}
++            </p>
++            <p>Este horário agora está novamente disponível em sua agenda.</p>
++            <br>
++            <p>Atenciosamente,<br>Equipe Zello.</p>
++          </div>
++        `,
++      });
++
++      this.logger.log(`E-mail de cancelamento medico enviado! Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
++    } catch (error) {
++      this.logger.error('Erro ao enviar e-mail de cancelamento para o medico:', error);
++    }
++  }
+ }
+diff --git a/apps/backend/src/user/user.service.ts b/apps/backend/src/user/user.service.ts
+index c78e86a..c471d1f 100644
+--- a/apps/backend/src/user/user.service.ts
++++ b/apps/backend/src/user/user.service.ts
+@@ -258,6 +258,7 @@ export class UserService {
+         specialty: true,
+         bio: true,
+         profilePictureUrl: true,
++        consultationPrice: true,
+         address: {
+           select: {
+             city: true,
+@@ -286,6 +287,7 @@ export class UserService {
+         specialty: doc.specialty,
+         bio: doc.bio,
+         profilePictureUrl: doc.profilePictureUrl,
++        consultationPrice: doc.consultationPrice,
+         address: doc.address,
+         nextAvailable: formatNextAvailableSlot(nextDate),
+         nextAvailableDate: nextDate ? nextDate.toISOString() : null,
+diff --git a/apps/frontend/src/app/medico/(dashboard)/agenda/page.tsx b/apps/frontend/src/app/medico/(dashboard)/agenda/page.tsx
+index b2b4485..8804a36 100644
+--- a/apps/frontend/src/app/medico/(dashboard)/agenda/page.tsx
++++ b/apps/frontend/src/app/medico/(dashboard)/agenda/page.tsx
+@@ -367,18 +367,10 @@ export default function AgendaPage() {
+         </div>
+       )}
+ 
+-      {/* Header */}
+-      <div className="flex items-center gap-3 mb-2">
+-        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-teal-50 dark:bg-teal-950/40">
+-          <Calendar className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+-        </div>
++      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+         <div>
+-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+-            Configurar Agenda
+-          </h1>
+-          <p className="text-sm text-slate-500 dark:text-slate-400">
+-            Defina seus horários de atendimento por dia da semana
+-          </p>
++          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Agenda</h1>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configure seus horários de atendimento e valor de consulta.</p>
+         </div>
+       </div>
+ 
+diff --git a/apps/frontend/src/app/medico/(dashboard)/atestados/page.tsx b/apps/frontend/src/app/medico/(dashboard)/atestados/page.tsx
+index 39f2bc8..176064b 100644
+--- a/apps/frontend/src/app/medico/(dashboard)/atestados/page.tsx
++++ b/apps/frontend/src/app/medico/(dashboard)/atestados/page.tsx
+@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
+ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+ import { api } from '@/services/api';
+ import Link from 'next/link';
+-import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle } from 'lucide-react';
++import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle, Calendar } from 'lucide-react';
+ import { Modal } from '@/components/common/Modal';
+ import { resolvePdfUrl } from '@/utils/resolvePdfUrl';
+ import { useDebounce } from '@/hooks/useDebounce';
+@@ -160,170 +160,198 @@ export default function CertificateHistoryPage() {
+   const renderContent = () => {
+     if (isLoading) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6">
+-            <div className="flex justify-center items-center">
+-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+-            </div>
+-          </td>
+-        </tr>
++        <div className="flex justify-center items-center h-64">
++          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
++        </div>
+       );
+     }
+     if (isError) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6 text-red-500">Erro ao carregar atestados. Tente novamente.</td>
+-        </tr>
++        <div className="text-center p-12 text-red-500 font-medium">Erro ao carregar atestados. Tente novamente.</div>
+       );
+     }
+     if (data?.data.length === 0) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6 text-gray-500 dark:text-slate-400">Nenhum atestado encontrado.</td>
+-        </tr>
++        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
++          <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
++            <Search className="w-8 h-8 text-gray-300 dark:text-slate-600" />
++          </div>
++          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">Nenhum atestado encontrado</h3>
++          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
++            Não encontramos atestados com os filtros aplicados.
++          </p>
++        </div>
+       );
+     }
+ 
+-    return data?.data.map((cert) => {
+-      const certId = String(cert.id);
+-      return (
+-        <tr key={cert.id} className={selectedIds.includes(certId) ? 'bg-blue-50 dark:bg-slate-700' : ''}>
+-        <td className="px-6 py-4">
+-          <input
+-            type="checkbox"
+-            checked={selectedIds.includes(certId)}
+-            onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
+-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+-          />
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
+-          {cert.patient?.patientProfile?.name || 'N/A'}
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+-          {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+-          <button
+-            onClick={() => handleOpenPreview(cert.pdfUrl)}
+-            className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center"
+-            title="Visualizar Atestado"
+-          >
+-            <Eye className="mr-1 h-4 w-4" />
+-            Visualizar
+-          </button>
+-          <a
+-            href={resolvePdfUrl(cert.pdfUrl)}
+-            target="_blank"
+-            rel="noopener noreferrer"
+-            className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 inline-flex items-center"
+-            title="Baixar Atestado"
+-          >
+-            <Download className="mr-1 h-4 w-4" />
+-            Baixar
+-          </a>
+-         <button
+-            onClick={() => openSingleDeleteModal(cert.id)}
+-            disabled={deleteMutation.isPending}
+-            className="text-red-600 hover:text-red-900 inline-flex items-center disabled:opacity-50"
+-            title="Excluir Atestado"
+-          >
+-            <Trash2 className="mr-1 h-4 w-4" />
+-            Excluir
+-          </button>
+-        </td>
+-        </tr>
+-      );
+-    });
++    return (
++      <div className="divide-y divide-gray-100 dark:divide-slate-700/50">
++        {data?.data.map((cert) => {
++          const certId = String(cert.id);
++          const isSelected = selectedIds.includes(certId);
++          const patientName = cert.patient?.patientProfile?.name || 'N/A';
++
++          return (
++            <div 
++              key={cert.id} 
++              className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group gap-4 sm:gap-0 ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
++            >
++              {/* Checkbox e Paciente Info */}
++              <div className="flex items-center gap-4 sm:w-2/5">
++                <input
++                  type="checkbox"
++                  checked={isSelected}
++                  onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
++                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-blue-500 cursor-pointer transition-all"
++                />
++                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
++                  {patientName.charAt(0)}
++                </div>
++                <div>
++                  <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
++                    {patientName}
++                  </h4>
++                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Paciente</p>
++                </div>
++              </div>
++
++              {/* Data */}
++              <div className="flex items-center gap-2 sm:w-1/4">
++                <div className="p-1.5 bg-gray-50 dark:bg-slate-800 rounded-md border border-gray-100 dark:border-slate-700">
++                  <Calendar className="w-4 h-4 text-slate-400" />
++                </div>
++                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
++                  {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
++                </span>
++              </div>
++
++              {/* Ações */}
++              <div className="flex items-center gap-2 sm:w-auto sm:justify-end">
++                <button
++                  onClick={() => handleOpenPreview(cert.pdfUrl)}
++                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
++                  title="Visualizar"
++                >
++                  <Eye className="w-4 h-4" />
++                </button>
++                <a
++                  href={resolvePdfUrl(cert.pdfUrl)}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
++                  title="Baixar"
++                >
++                  <Download className="w-4 h-4" />
++                </a>
++                <button
++                  onClick={() => openSingleDeleteModal(cert.id)}
++                  disabled={deleteMutation.isPending}
++                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
++                  title="Excluir"
++                >
++                  <Trash2 className="w-4 h-4" />
++                </button>
++              </div>
++            </div>
++          );
++        })}
++      </div>
++    );
+   };
+ 
+ 
+   return (
+-    <div>
+-      <div className="flex justify-between items-center mb-8">
+-        <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">Atestados</h1>
++    <div className="max-w-6xl mx-auto space-y-8">
++      {/* Header */}
++      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
++        <div>
++          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Atestados</h1>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie, visualize e baixe os atestados emitidos para seus pacientes.</p>
++        </div>
+         <Link 
+           href="/medico/atestados/novo"
+-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
++          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm hover:shadow-md"
+         >
+           <PlusCircle className="w-5 h-5" />
+           Emitir Atestado
+         </Link>
+       </div>
+ 
+-      <div className="mb-6">
+-        <div className="relative">
+-          <input
+-            type="text"
++      {/* Controles: Busca e Batch Delete */}
++      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
++        <div className="relative w-full md:max-w-md">
++          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
++          <input 
++            type="text" 
+             value={inputValue}
+             onChange={(e) => setInputValue(e.target.value)}
+-            placeholder="Buscar por nome do paciente..."
+-            className="w-full p-3 pl-10 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500"
++            placeholder="Buscar por nome do paciente..." 
++            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all dark:text-slate-200 shadow-sm"
+           />
+-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+         </div>
+-      </div>
+ 
+-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+-        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+-          <thead className="bg-gray-50 dark:bg-slate-800/80">
+-            <tr>
+-              {/* O botão de exclusão em lote agora vive aqui, ao lado do checkbox */}
+-              <th className="px-6 py-3 text-left">
+-                <div className="flex items-center gap-x-3">
+-                  <input
+-                    type="checkbox"
+-                    ref={headerCheckboxRef}
+-                    onChange={handleSelectAll}
+-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+-                  />
+-                  {selectedIds.length > 0 && (
+-                    <button
+-                      onClick={openBatchDeleteModal}
+-                      className="p-1 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
+-                      disabled={batchDeleteMutation.isPending}
+-                      title={`Excluir ${selectedIds.length} atestado(s)`}
+-                    >
+-                      <Trash2 size={16} />
+-                    </button>
+-                  )}
+-                </div>
+-              </th>
+-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Paciente</th>
+-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Data de Emissão</th>
+-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Ações</th>
+-            </tr>
+-          </thead>
+-          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+-            {renderContent()}
+-          </tbody>
+-        </table>
++        <div className="flex items-center gap-3">
++           {selectedIds.length > 0 && (
++             <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl border border-red-100 dark:border-red-900/30">
++               <span className="text-sm font-semibold">{selectedIds.length} selecionado(s)</span>
++               <button
++                 onClick={openBatchDeleteModal}
++                 disabled={batchDeleteMutation.isPending}
++                 className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
++               >
++                 <Trash2 className="w-3.5 h-3.5" />
++                 Excluir
++               </button>
++             </div>
++           )}
++        </div>
+       </div>
+ 
+-      {data && data.total > 0 && (
+-        <div className="mt-6 flex justify-between items-center">
+-            <div>
+-            <p className="text-sm text-gray-700 dark:text-slate-300">
+-                Página <span className="font-medium">{data.page}</span> de <span className="font-medium">{data.totalPages}</span>
++      {/* Lista de Atestados (Estilo SaaS Moderno) */}
++      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700/60 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
++        {/* Header da Lista */}
++        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/80">
++          <div className="flex items-center gap-4">
++            <input
++              type="checkbox"
++              ref={headerCheckboxRef}
++              onChange={handleSelectAll}
++              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-blue-500 cursor-pointer transition-all"
++            />
++            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Atestados Emitidos</span>
++          </div>
++        </div>
++
++        {/* Corpo da Lista */}
++        <div className="flex-1">
++          {renderContent()}
++        </div>
++        
++        {/* Pagination Footer */}
++        {data && data.total > 0 && (
++          <div className="p-4 border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
++            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
++              Página <span className="text-slate-900 dark:text-white font-bold">{data.page}</span> de <span className="text-slate-900 dark:text-white font-bold">{data.totalPages}</span>
+             </p>
+-            </div>
+             <div className="flex gap-2">
+-            <button
++              <button
+                 onClick={() => setPage(p => Math.max(p - 1, 1))}
+                 disabled={page === 1 || isLoading}
+-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
+-            >
++                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
++              >
+                 Anterior
+-            </button>
+-            <button
++              </button>
++              <button
+                 onClick={() => setPage(p => p + 1)}
+                 disabled={page === data.totalPages || isLoading}
+-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
+-            >
+-                Próximo
+-            </button>
++                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
++              >
++                Próxima
++              </button>
+             </div>
+-        </div>
+-      )}
++          </div>
++        )}
++      </div>
+ 
+       <Modal
+         isOpen={isPreviewModalOpen}
+diff --git a/apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx b/apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx
+index 6ff234b..955bcf5 100644
+--- a/apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx
++++ b/apps/frontend/src/app/medico/(dashboard)/dashboard/page.tsx
+@@ -29,6 +29,33 @@ const statusBadgeStyles: Record<string, string> = {
+   REAGENDADA: 'bg-blue-50 text-blue-700 border-blue-250 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
+ };
+ 
++const isAppointmentMissed = (dateString: string) => {
++  const appTime = new Date(dateString).getTime();
++  const now = new Date().getTime();
++  const windowEnd = appTime + 15 * 60 * 1000; // 15 minutos de tolerância
++  return now > windowEnd;
++};
++
++const isAppointmentStartable = (dateString: string) => {
++  const appTime = new Date(dateString).getTime();
++  const now = new Date().getTime();
++  const windowStart = appTime - 15 * 60 * 1000; // 15 minutos antes
++  const windowEnd = appTime + 15 * 60 * 1000; // 15 minutos depois
++  return now >= windowStart && now <= windowEnd;
++};
++
++const getDisplayStatus = (appointment: AppointmentApi) => {
++  if (appointment.status === 'AGENDADA' && isAppointmentMissed(appointment.date)) {
++    return 'NAO_INICIADA';
++  }
++  return appointment.status;
++};
++
++const formatStatusText = (status: string) => {
++  if (status === 'NAO_INICIADA') return 'NÃO INICIADA';
++  return status;
++};
++
+ const formatAppointmentDate = (dateString: string) => {
+   try {
+     const date = new Date(dateString);
+@@ -105,9 +132,10 @@ export default function DashboardPage() {
+     return 'Boa noite';
+   }, []);
+ 
+-  const todayAppointmentsCount = useMemo(() => {
+-    if (!appointments) return 0;
+-    
++  const todayStats = useMemo(() => {
++    const stats = { total: 0, agendadas: 0, realizadas: 0, naoIniciadas: 0, canceladas: 0 };
++    if (!appointments) return stats;
++
+     const formatter = new Intl.DateTimeFormat('sv-SE', {
+       timeZone: 'America/Sao_Paulo',
+       year: 'numeric',
+@@ -115,25 +143,54 @@ export default function DashboardPage() {
+       day: '2-digit',
+     });
+     const todayStr = formatter.format(new Date());
+-    
+-    return appointments.filter((app) => {
++
++    appointments.forEach((app) => {
+       try {
+         const appDate = new Date(app.date);
+         const appStr = formatter.format(appDate);
+-        return appStr === todayStr;
++        if (appStr === todayStr) {
++          stats.total++;
++          const status = getDisplayStatus(app);
++          if (status === 'AGENDADA') stats.agendadas++;
++          else if (status === 'REALIZADA') stats.realizadas++;
++          else if (status === 'NAO_INICIADA') stats.naoIniciadas++;
++          else if (status === 'CANCELADA') stats.canceladas++;
++        }
+       } catch (e) {
+-        return false;
++        // ignore
+       }
+-    }).length;
++    });
++
++    return stats;
+   }, [appointments]);
+ 
+   const nextAppointment = useMemo(() => {
+     if (!appointments) return null;
+-    const now = new Date().getTime();
+     return appointments
+       .slice()
+       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+-      .find(app => app.status === 'AGENDADA' && new Date(app.date).getTime() >= now) || null;
++      .find(app => app.status === 'AGENDADA' && !isAppointmentMissed(app.date)) || null;
++  }, [appointments]);
++
++  const todayAppointments = useMemo(() => {
++    if (!appointments) return [];
++    const formatter = new Intl.DateTimeFormat('sv-SE', {
++      timeZone: 'America/Sao_Paulo',
++      year: 'numeric',
++      month: '2-digit',
++      day: '2-digit',
++    });
++    const todayStr = formatter.format(new Date());
++
++    return appointments
++      .filter(app => {
++        try {
++          return formatter.format(new Date(app.date)) === todayStr;
++        } catch (e) {
++          return false;
++        }
++      })
++      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+   }, [appointments]);
+ 
+   return (
+@@ -147,57 +204,112 @@ export default function DashboardPage() {
+         </div>
+       </div>
+ 
+-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full">
+-          {isLoadingAppointments ? (
+-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 dark:border-slate-600 border-t-teal-500" />
+-          ) : (
+-            <h3 className="text-5xl font-bold text-gray-800 dark:text-slate-100">
+-              {todayAppointmentsCount}
+-            </h3>
+-          )}
+-          <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consultas Hoje</p>
+-        </div>
+-        
++      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+         {nextAppointment ? (
+-          <div className="lg:col-span-2 p-6 bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-900/80 dark:to-teal-800/60 dark:border dark:border-teal-500/40 dark:shadow-[0_0_25px_rgba(20,184,166,0.15)] rounded-lg shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden">
+-             <div className="absolute -top-4 -right-4 p-6 opacity-10 dark:opacity-10 dark:text-teal-400 pointer-events-none">
+-               <Calendar className="w-48 h-48" />
+-             </div>
+-             <div className="relative z-10">
+-               <h3 className="text-teal-100 dark:text-teal-300 font-medium mb-1">Próxima Consulta</h3>
+-               <h2 className="text-2xl font-bold mb-2 dark:text-white">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
+-               <div className="flex items-center gap-2 text-teal-50 dark:text-teal-50/90">
+-                 <Clock className="w-4 h-4" />
+-                 <span>{formatAppointmentDate(nextAppointment.date)}</span>
+-               </div>
+-               <div className="mt-5 flex gap-3">
+-                 <button className="px-4 py-2 bg-white dark:bg-teal-400 text-teal-700 dark:text-teal-950 font-bold rounded-md shadow-sm hover:bg-teal-50 dark:hover:bg-teal-300 dark:shadow-[0_0_15px_rgba(45,212,191,0.3)] transition-all">
+-                   Iniciar Atendimento
+-                 </button>
+-                 <button 
+-                   onClick={() => handleOpenDetails(nextAppointment)}
+-                   className="px-4 py-2 bg-teal-700/50 dark:bg-teal-900/40 hover:bg-teal-700 dark:hover:bg-teal-800/60 border border-teal-400/30 dark:border-teal-500/40 text-white dark:text-teal-100 font-semibold rounded-md transition-colors"
+-                 >
+-                   Detalhes
+-                 </button>
+-               </div>
+-             </div>
++          <div className="lg:col-span-1 p-6 bg-gradient-to-br from-teal-500 to-teal-700 dark:from-teal-800 dark:to-teal-950 rounded-xl shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden group">
++            <div className="absolute -top-6 -right-6 p-6 opacity-10 dark:opacity-10 dark:text-teal-400 pointer-events-none transform transition-transform group-hover:scale-110 duration-500">
++              <Calendar className="w-48 h-48" />
++            </div>
++            <div className="relative z-10 flex flex-col h-full justify-between">
++              <div>
++                <h3 className="text-teal-100/90 dark:text-teal-300 font-semibold uppercase tracking-wider text-xs mb-3">Próxima Consulta</h3>
++                <h2 className="text-3xl font-black mb-3 dark:text-white leading-tight">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
++                <div className="flex items-center gap-2 text-teal-50/90 dark:text-teal-100 bg-black/10 dark:bg-black/20 w-fit px-3 py-1.5 rounded-lg text-sm font-medium">
++                  <Clock className="w-4 h-4" />
++                  <span>{formatAppointmentDate(nextAppointment.date)}</span>
++                </div>
++              </div>
++
++              <div className="mt-6 flex flex-col gap-2">
++                {isAppointmentStartable(nextAppointment.date) ? (
++                  <button
++                    onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
++                    className="w-full py-3 bg-white dark:bg-teal-400 text-teal-800 dark:text-teal-950 font-bold rounded-xl shadow-sm hover:bg-teal-50 dark:hover:bg-teal-300 transition-all text-sm"
++                  >
++                    Iniciar Atendimento
++                  </button>
++                ) : (
++                  <button
++                    disabled
++                    className="w-full py-3 bg-teal-900/20 dark:bg-teal-900/40 text-teal-100/70 dark:text-teal-500/50 font-bold rounded-xl cursor-not-allowed border border-teal-400/20 text-sm"
++                  >
++                    Aguarde o Horário
++                  </button>
++                )}
++                <button
++                  onClick={() => handleOpenDetails(nextAppointment)}
++                  className="w-full py-3 bg-transparent hover:bg-teal-900/20 border border-teal-400/30 text-white dark:text-teal-100 font-bold rounded-xl transition-colors text-sm"
++                >
++                  Ver Detalhes
++                </button>
++              </div>
++            </div>
+           </div>
+         ) : (
+-          <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full border border-dashed border-gray-200 dark:border-slate-700">
+-             <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Agenda Livre</h3>
+-             <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem próximas consultas pendentes.</p>
++          <div className="lg:col-span-1 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm flex flex-col items-center justify-center h-full border border-dashed border-gray-200 dark:border-slate-700">
++            <div className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-full mb-3">
++              <Calendar className="w-8 h-8 text-gray-400 dark:text-slate-500" />
++            </div>
++            <h3 className="text-lg font-bold text-gray-700 dark:text-slate-200 mb-1">Agenda Livre</h3>
++            <p className="text-sm text-center text-gray-500 dark:text-slate-400">Você não tem consultas futuras próximas.</p>
+           </div>
+         )}
++
++        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group hover:border-teal-500/30 dark:hover:border-teal-400/30 transition-colors">
++          {/* Ícone de Fundo Decorativo */}
++          <div className="absolute -right-4 -bottom-4 text-teal-50 dark:text-teal-900/20 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
++            <Calendar size={120} strokeWidth={1} />
++          </div>
++
++          <div className="flex items-start justify-between mb-2 relative z-10">
++            <p className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">Resumo Diário</p>
++            <div className="p-2.5 bg-teal-50 dark:bg-teal-900/30 rounded-lg text-teal-600 dark:text-teal-400 shadow-sm">
++              <Calendar className="w-5 h-5" />
++            </div>
++          </div>
++
++          <div className="relative z-10 mt-auto pt-4">
++            {isLoadingAppointments ? (
++              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 dark:border-slate-700 border-t-teal-500" />
++            ) : (
++              <div className="flex flex-col gap-5 mt-2">
++                <div className="flex items-end gap-3">
++                  <h3 className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
++                    {todayStats.total}
++                  </h3>
++                  <span className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1.5">atendimentos hoje</span>
++                </div>
++
++                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full mt-2">
++                  <div className="flex flex-col items-center justify-center p-3 sm:p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800/30">
++                    <span className="text-2xl sm:text-xl font-black text-amber-700 dark:text-amber-300 leading-none">{todayStats.agendadas}</span>
++                    <span className="text-[10px] sm:text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-tighter mt-1.5 sm:mt-1 text-center">Agendadas</span>
++                  </div>
++                  <div className="flex flex-col items-center justify-center p-3 sm:p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800/30">
++                    <span className="text-2xl sm:text-xl font-black text-green-700 dark:text-green-300 leading-none">{todayStats.realizadas}</span>
++                    <span className="text-[10px] sm:text-[9px] text-green-600 dark:text-green-400 font-bold uppercase tracking-tighter mt-1.5 sm:mt-1 text-center">Realizadas</span>
++                  </div>
++                  <div className="flex flex-col items-center justify-center p-3 sm:p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
++                    <span className="text-2xl sm:text-xl font-black text-slate-700 dark:text-slate-300 leading-none">{todayStats.naoIniciadas}</span>
++                    <span className="text-[10px] sm:text-[9px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-tighter mt-1.5 sm:mt-1 text-center line-clamp-1" title="Não Iniciadas">Não Iniciadas</span>
++                  </div>
++                  <div className="flex flex-col items-center justify-center p-3 sm:p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800/30">
++                    <span className="text-2xl sm:text-xl font-black text-red-700 dark:text-red-300 leading-none">{todayStats.canceladas}</span>
++                    <span className="text-[10px] sm:text-[9px] text-red-600 dark:text-red-400 font-bold uppercase tracking-tighter mt-1.5 sm:mt-1 text-center">Canceladas</span>
++                  </div>
++                </div>
++              </div>
++            )}
++          </div>
++        </div>
+       </div>
+ 
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         {/* Lista Geral de Consultas */}
+-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col h-[520px]">
+-          <h2 className="text-xl font-semibold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+-            <Calendar className="w-5 h-5 text-teal-650 dark:text-teal-400" />
+-            Consultas
++        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md flex flex-col border border-gray-100 dark:border-slate-700/60">
++          <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-6 flex items-center gap-2">
++            <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
++            Agenda de Hoje
+           </h2>
+ 
+           {isLoadingAppointments && <AppointmentsListSkeleton />}
+@@ -207,9 +319,9 @@ export default function DashboardPage() {
+           )}
+ 
+           {!isLoadingAppointments && !isAppointmentsError && (
+-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar flex flex-col">
+-              {appointments && appointments.length > 0 ? (
+-                appointments.map((appointment) => (
++            <div className="flex flex-col space-y-3">
++              {todayAppointments && todayAppointments.length > 0 ? (
++                todayAppointments.map((appointment) => (
+                   <div
+                     key={appointment.id}
+                     onClick={() => handleOpenDetails(appointment)}
+@@ -231,11 +343,10 @@ export default function DashboardPage() {
+                     </div>
+                     <div className="flex flex-col items-end gap-2">
+                       <span
+-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+-                          statusBadgeStyles[appointment.status] || ''
+-                        }`}
++                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeStyles[getDisplayStatus(appointment)] || ''
++                          }`}
+                       >
+-                        {appointment.status}
++                        {formatStatusText(getDisplayStatus(appointment))}
+                       </span>
+                     </div>
+                   </div>
+@@ -248,10 +359,10 @@ export default function DashboardPage() {
+         </div>
+ 
+         {/* Tarefas Pendentes */}
+-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col h-[520px]">
+-          <h2 className="text-xl font-semibold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+-            <CalendarDays className="w-5 h-5 text-teal-650 dark:text-teal-400" />
+-            Tarefas Pendentes
++        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md flex flex-col border border-gray-100 dark:border-slate-700/60 h-full min-h-[300px]">
++          <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-6 flex items-center gap-2">
++            <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
++            Ações Necessárias
+           </h2>
+ 
+           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-lg">
+@@ -270,7 +381,7 @@ export default function DashboardPage() {
+         maxWidth="max-w-lg"
+       >
+         {selectedAppointment && (
+-          <div className="flex flex-col gap-5 mt-2">
++          <div className="flex flex-col gap-6 mt-4">
+             {/* Paciente Header */}
+             <div className="flex items-center gap-4 p-4 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30 rounded-xl">
+               <div className="w-12 h-12 bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0">
+@@ -316,35 +427,42 @@ export default function DashboardPage() {
+                 </div>
+                 <div className="text-right">
+                   <span className="block text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Status</span>
+-                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
+-                    {selectedAppointment.status}
++                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadgeStyles[getDisplayStatus(selectedAppointment)] || ''}`}>
++                    {formatStatusText(getDisplayStatus(selectedAppointment))}
+                   </span>
+                 </div>
+               </div>
+             </div>
+-             
+-             {/* Rodapé e Ações */}
+-             <div className="pt-4 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center gap-3">
+-               <button 
+-                 onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')} 
+-                 className="px-4 py-2 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-500 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none"
+-               >
+-                 Reagendar
+-               </button>
+-               <div className="flex gap-2">
+-                 <button 
+-                   onClick={() => setIsModalOpen(false)} 
+-                   className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-gray-400 focus:outline-none"
+-                 >
+-                   Fechar
+-                 </button>
+-                 {selectedAppointment.status === 'AGENDADA' && (
+-                   <button className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-sm shadow-teal-600/30 transition-all focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900">
+-                     Iniciar Consulta
+-                   </button>
+-                 )}
+-               </div>
+-             </div>
++
++            {/* Rodapé e Ações */}
++            <div className="pt-6 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center w-full">
++              {getDisplayStatus(selectedAppointment) === 'AGENDADA' ? (
++                <button
++                  onClick={() => alert('Fluxo de cancelamento de consulta ainda não implementado no Backend.')}
++                  className="px-5 py-2 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none"
++                >
++                  Cancelar Consulta
++                </button>
++              ) : (
++                <div>{/* Spacer para manter distribuição correta */}</div>
++              )}
++
++              <button
++                onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')}
++                className="px-5 py-2 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none"
++              >
++                Reagendar
++              </button>
++
++              {selectedAppointment.status === 'AGENDADA' && isAppointmentStartable(selectedAppointment.date) && (
++                <button
++                  onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
++                  className="px-5 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none"
++                >
++                  Iniciar Consulta
++                </button>
++              )}
++            </div>
+           </div>
+         )}
+       </Modal>
+diff --git a/apps/frontend/src/app/medico/(dashboard)/receitas/page.tsx b/apps/frontend/src/app/medico/(dashboard)/receitas/page.tsx
+index be2d084..8733b15 100644
+--- a/apps/frontend/src/app/medico/(dashboard)/receitas/page.tsx
++++ b/apps/frontend/src/app/medico/(dashboard)/receitas/page.tsx
+@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
+ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+ import { api } from '@/services/api';
+ import Link from 'next/link';
+-import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle } from 'lucide-react';
++import { Search, Download, Trash2, Loader2, AlertTriangle, Eye, PlusCircle, Calendar } from 'lucide-react';
+ import { Modal } from '@/components/common/Modal';
+ import { resolvePdfUrl } from '@/utils/resolvePdfUrl';
+ import { useDebounce } from '@/hooks/useDebounce';
+@@ -160,170 +160,198 @@ export default function PrescriptionHistoryPage() {
+   const renderContent = () => {
+     if (isLoading) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6">
+-            <div className="flex justify-center items-center">
+-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+-            </div>
+-          </td>
+-        </tr>
++        <div className="flex justify-center items-center h-64">
++          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
++        </div>
+       );
+     }
+     if (isError) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6 text-red-500">Erro ao carregar receitas. Tente novamente.</td>
+-        </tr>
++        <div className="text-center p-12 text-red-500 font-medium">Erro ao carregar receitas. Tente novamente.</div>
+       );
+     }
+     if (data?.data.length === 0) {
+       return (
+-        <tr>
+-          <td colSpan={4} className="text-center p-6 text-gray-500 dark:text-slate-400">Nenhuma receita encontrada.</td>
+-        </tr>
++        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
++          <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
++            <Search className="w-8 h-8 text-gray-300 dark:text-slate-600" />
++          </div>
++          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">Nenhuma receita encontrada</h3>
++          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
++            Não encontramos receitas com os filtros aplicados.
++          </p>
++        </div>
+       );
+     }
+ 
+-    return data?.data.map((cert) => {
+-      const certId = String(cert.id);
+-      return (
+-        <tr key={cert.id} className={selectedIds.includes(certId) ? 'bg-blue-50 dark:bg-slate-700' : ''}>
+-        <td className="px-6 py-4">
+-          <input
+-            type="checkbox"
+-            checked={selectedIds.includes(certId)}
+-            onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
+-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+-          />
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
+-          {cert.patient?.patientProfile?.name || 'N/A'}
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+-          {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
+-        </td>
+-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+-          <button
+-            onClick={() => handleOpenPreview(cert.pdfUrl)}
+-            className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center"
+-            title="Visualizar Receita"
+-          >
+-            <Eye className="mr-1 h-4 w-4" />
+-            Visualizar
+-          </button>
+-          <a
+-            href={resolvePdfUrl(cert.pdfUrl)}
+-            target="_blank"
+-            rel="noopener noreferrer"
+-            className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 inline-flex items-center"
+-            title="Baixar Receita"
+-          >
+-            <Download className="mr-1 h-4 w-4" />
+-            Baixar
+-          </a>
+-          <button
+-            onClick={() => openSingleDeleteModal(cert.id)}
+-            disabled={deleteMutation.isPending}
+-            className="text-red-600 hover:text-red-900 inline-flex items-center disabled:opacity-50"
+-            title="Excluir Receita"
+-          >
+-            <Trash2 className="mr-1 h-4 w-4" />
+-            Excluir
+-          </button>
+-        </td>
+-        </tr>
+-      );
+-    });
++    return (
++      <div className="divide-y divide-gray-100 dark:divide-slate-700/50">
++        {data?.data.map((cert) => {
++          const certId = String(cert.id);
++          const isSelected = selectedIds.includes(certId);
++          const patientName = cert.patient?.patientProfile?.name || 'N/A';
++
++          return (
++            <div 
++              key={cert.id} 
++              className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group gap-4 sm:gap-0 ${isSelected ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}
++            >
++              {/* Checkbox e Paciente Info */}
++              <div className="flex items-center gap-4 sm:w-2/5">
++                <input
++                  type="checkbox"
++                  checked={isSelected}
++                  onChange={(e) => handleSelectOne(cert.id, e.target.checked)}
++                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-green-500 cursor-pointer transition-all"
++                />
++                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
++                  {patientName.charAt(0)}
++                </div>
++                <div>
++                  <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
++                    {patientName}
++                  </h4>
++                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Paciente</p>
++                </div>
++              </div>
++
++              {/* Data */}
++              <div className="flex items-center gap-2 sm:w-1/4">
++                <div className="p-1.5 bg-gray-50 dark:bg-slate-800 rounded-md border border-gray-100 dark:border-slate-700">
++                  <Calendar className="w-4 h-4 text-slate-400" />
++                </div>
++                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
++                  {new Date(cert.issueDate).toLocaleDateString('pt-BR')}
++                </span>
++              </div>
++
++              {/* Ações */}
++              <div className="flex items-center gap-2 sm:w-auto sm:justify-end">
++                <button
++                  onClick={() => handleOpenPreview(cert.pdfUrl)}
++                  className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
++                  title="Visualizar"
++                >
++                  <Eye className="w-4 h-4" />
++                </button>
++                <a
++                  href={resolvePdfUrl(cert.pdfUrl)}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
++                  title="Baixar"
++                >
++                  <Download className="w-4 h-4" />
++                </a>
++                <button
++                  onClick={() => openSingleDeleteModal(cert.id)}
++                  disabled={deleteMutation.isPending}
++                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
++                  title="Excluir"
++                >
++                  <Trash2 className="w-4 h-4" />
++                </button>
++              </div>
++            </div>
++          );
++        })}
++      </div>
++    );
+   };
+ 
+ 
+   return (
+-    <div>
+-      <div className="flex justify-between items-center mb-8">
+-        <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">Receitas</h1>
++    <div className="max-w-6xl mx-auto space-y-8">
++      {/* Header */}
++      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
++        <div>
++          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Receitas</h1>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie, visualize e baixe as receitas emitidas para seus pacientes.</p>
++        </div>
+         <Link 
+           href="/medico/receitas/novo"
+-          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
++          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-sm hover:shadow-md"
+         >
+           <PlusCircle className="w-5 h-5" />
+           Emitir Receita
+         </Link>
+       </div>
+ 
+-      <div className="mb-6">
+-        <div className="relative">
+-          <input
+-            type="text"
++      {/* Controles: Busca e Batch Delete */}
++      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
++        <div className="relative w-full md:max-w-md">
++          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
++          <input 
++            type="text" 
+             value={inputValue}
+             onChange={(e) => setInputValue(e.target.value)}
+-            placeholder="Buscar por nome do paciente..."
+-            className="w-full p-3 pl-10 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 focus:border-teal-500 dark:focus:border-teal-500"
++            placeholder="Buscar por nome do paciente..." 
++            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all dark:text-slate-200 shadow-sm"
+           />
+-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+         </div>
+-      </div>
+ 
+-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+-        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+-          <thead className="bg-gray-50 dark:bg-slate-800/80">
+-            <tr>
+-              {/* O botão de exclusão em lote agora vive aqui, ao lado do checkbox */}
+-              <th className="px-6 py-3 text-left">
+-                <div className="flex items-center gap-x-3">
+-                  <input
+-                    type="checkbox"
+-                    ref={headerCheckboxRef}
+-                    onChange={handleSelectAll}
+-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+-                  />
+-                  {selectedIds.length > 0 && (
+-                    <button
+-                      onClick={openBatchDeleteModal}
+-                      className="p-1 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
+-                      disabled={batchDeleteMutation.isPending}
+-                      title={`Excluir ${selectedIds.length} receita(s)`}
+-                    >
+-                      <Trash2 size={16} />
+-                    </button>
+-                  )}
+-                </div>
+-              </th>
+-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Paciente</th>
+-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Data de Emissão</th>
+-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Ações</th>
+-            </tr>
+-          </thead>
+-          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+-            {renderContent()}
+-          </tbody>
+-        </table>
++        <div className="flex items-center gap-3">
++           {selectedIds.length > 0 && (
++             <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl border border-red-100 dark:border-red-900/30">
++               <span className="text-sm font-semibold">{selectedIds.length} selecionado(s)</span>
++               <button
++                 onClick={openBatchDeleteModal}
++                 disabled={batchDeleteMutation.isPending}
++                 className="flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
++               >
++                 <Trash2 className="w-3.5 h-3.5" />
++                 Excluir
++               </button>
++             </div>
++           )}
++        </div>
+       </div>
+ 
+-      {data && data.total > 0 && (
+-        <div className="mt-6 flex justify-between items-center">
+-            <div>
+-            <p className="text-sm text-gray-700 dark:text-slate-300">
+-                Página <span className="font-medium">{data.page}</span> de <span className="font-medium">{data.totalPages}</span>
++      {/* Lista de Receitas (Estilo SaaS Moderno) */}
++      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700/60 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
++        {/* Header da Lista */}
++        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/80">
++          <div className="flex items-center gap-4">
++            <input
++              type="checkbox"
++              ref={headerCheckboxRef}
++              onChange={handleSelectAll}
++              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:checked:bg-green-500 cursor-pointer transition-all"
++            />
++            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Receitas Emitidas</span>
++          </div>
++        </div>
++
++        {/* Corpo da Lista */}
++        <div className="flex-1">
++          {renderContent()}
++        </div>
++        
++        {/* Pagination Footer */}
++        {data && data.total > 0 && (
++          <div className="p-4 border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
++            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
++              Página <span className="text-slate-900 dark:text-white font-bold">{data.page}</span> de <span className="text-slate-900 dark:text-white font-bold">{data.totalPages}</span>
+             </p>
+-            </div>
+             <div className="flex gap-2">
+-            <button
++              <button
+                 onClick={() => setPage(p => Math.max(p - 1, 1))}
+                 disabled={page === 1 || isLoading}
+-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
+-            >
++                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
++              >
+                 Anterior
+-            </button>
+-            <button
++              </button>
++              <button
+                 onClick={() => setPage(p => p + 1)}
+                 disabled={page === data.totalPages || isLoading}
+-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
+-            >
+-                Próximo
+-            </button>
++                className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors shadow-sm"
++              >
++                Próxima
++              </button>
+             </div>
+-        </div>
+-      )}
++          </div>
++        )}
++      </div>
+ 
+       <Modal
+         isOpen={isPreviewModalOpen}
+diff --git a/apps/frontend/src/app/medicos/page.tsx b/apps/frontend/src/app/medicos/page.tsx
+index 3693756..1e0870e 100644
+--- a/apps/frontend/src/app/medicos/page.tsx
++++ b/apps/frontend/src/app/medicos/page.tsx
+@@ -51,7 +51,7 @@ function MedicosContent() {
+   const [selectedLocation, setSelectedLocation] = useState(location);
+   const [onlyTelehealth, setOnlyTelehealth] = useState(false);
+   const [onlyInPerson, setOnlyInPerson] = useState(false);
+-  const [availabilityFilter, setAvailabilityFilter] = useState('Qualquer dia');
++
+   const [maxPrice, setMaxPrice] = useState<number | null>(null);
+   const [sortBy, setSortBy] = useState('Recomendados');
+ 
+@@ -146,12 +146,7 @@ function MedicosContent() {
+     if (maxPrice && doc.price > maxPrice) {
+       return false;
+     }
+-    if (availabilityFilter === 'Hoje') {
+-      return doc.nextAvailable.toLowerCase().includes('hoje');
+-    }
+-    if (availabilityFilter === 'Amanhã') {
+-      return doc.nextAvailable.toLowerCase().includes('amanhã');
+-    }
++
+     return true;
+   });
+ 
+@@ -171,7 +166,7 @@ function MedicosContent() {
+     setSelectedLocation('');
+     setOnlyTelehealth(false);
+     setOnlyInPerson(false);
+-    setAvailabilityFilter('Qualquer dia');
++
+     setMaxPrice(null);
+     updateURL('', '');
+   };
+@@ -290,31 +285,6 @@ function MedicosContent() {
+                     </div>
+                   </div>
+ 
+-                  {/* Availability Filter (Dark mode fixes applied here) */}
+-                  <div>
+-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+-                      Próxima Disponibilidade
+-                    </label>
+-                    <div className="mt-3 grid grid-cols-3 gap-1.5">
+-                      {['Qualquer dia', 'Hoje', 'Amanhã'].map((day) => {
+-                        const isSelected = availabilityFilter === day;
+-                        return (
+-                          <button
+-                            key={day}
+-                            onClick={() => setAvailabilityFilter(day)}
+-                            className={`rounded-lg py-2 text-xs font-bold border transition-all ${
+-                              isSelected
+-                                ? 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-800 dark:text-teal-400 shadow-sm'
+-                                : 'bg-transparent border-slate-200 hover:bg-slate-50 text-slate-700 dark:border-slate-750 dark:hover:bg-slate-700 dark:text-slate-300'
+-                            }`}
+-                          >
+-                            {day.split(' ')[0]}
+-                          </button>
+-                        );
+-                      })}
+-                    </div>
+-                  </div>
+-
+                   {/* Price Filter */}
+                   <div>
+                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+@@ -409,60 +379,77 @@ function MedicosContent() {
+               ) : (
+                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                   {sortedDoctors.map((doc) => (
+-                    <Link key={doc.id} href={`/medico/${doc.id}`} className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/65 dark:bg-slate-800 dark:ring-slate-705 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:-translate-y-1">
+-                      <div className="flex items-start gap-4">
+-                        <div className="relative h-16 w-16 flex-shrink-0">
++                    <Link key={doc.id} href={`/medico/${doc.id}`} className="group relative flex flex-col rounded-2xl bg-white p-5 border border-slate-200 shadow-sm dark:bg-slate-800/80 dark:border-slate-700/60 dark:shadow-none hover:border-teal-500/40 dark:hover:border-teal-400/40 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-300 overflow-hidden">
++                      {/* Top Accent Line */}
++                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
++                      
++                      <div className="flex gap-4">
++                        {/* Profile Image with subtle square-rounded style */}
++                        <div className="relative h-[72px] w-[72px] flex-shrink-0">
+                           <Image
+                             src={doc.profilePictureUrl || DEFAULT_AVATAR}
+                             alt={doc.name}
+                             fill
+-                            className="rounded-full object-cover shadow-sm ring-2 ring-slate-100 dark:ring-slate-700"
+-                            sizes="64px"
++                            className="rounded-2xl object-cover shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
++                            sizes="72px"
+                           />
+-                          <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-800" />
++                          <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-800" />
+                         </div>
+-                        <div className="flex-grow">
+-                          <h3 className="font-extrabold text-slate-900 dark:text-white leading-tight">{doc.name}</h3>
+-                          <p className="text-xs font-bold tracking-wide text-teal-600 dark:text-teal-400 uppercase mt-0.5">{doc.specialty || 'Clínico Geral'}</p>
+-                          <p className="text-[11px] font-semibold text-slate-450 dark:text-slate-500">{doc.crm}</p>
++                        
++                        <div className="flex-grow pt-1">
++                          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-50 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors leading-tight">
++                            {doc.name}
++                          </h3>
++                          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
++                            <span className="text-teal-600 dark:text-teal-400">{doc.specialty || 'Clínico Geral'}</span>
++                            <span className="opacity-50">•</span>
++                            <span>{doc.crm || 'CRM N/A'}</span>
++                          </div>
+                           
+-                          <div className="mt-2.5 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md">
+-                            <Star className="h-3 w-3 fill-amber-400 text-amber-450" />
+-                            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-400">{doc.rating}</span>
+-                            <span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium">({doc.reviews} avaliações)</span>
++                          <div className="mt-2.5 flex items-center gap-2">
++                            <div className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-800/30">
++                              <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
++                              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">{doc.rating}</span>
++                            </div>
++                            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
++                              {doc.reviews} avaliações
++                            </span>
+                           </div>
+                         </div>
+                       </div>
+ 
+                       <div className="mt-4 flex flex-wrap gap-1.5">
+                         {doc.tags.map((tag: string) => (
+-                          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 ring-1 ring-inset ring-slate-200/70 dark:bg-slate-700/50 dark:text-slate-400 dark:ring-slate-600/80">
+-                            {tag === 'Teleconsulta' && <Video className="h-3 w-3 text-teal-655 dark:text-teal-405" />}
++                          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 border border-slate-200 dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-700/60">
++                            {tag === 'Teleconsulta' && <Video className="h-3 w-3 text-teal-600 dark:text-teal-500" />}
+                             {tag}
+                           </span>
+                         ))}
+                       </div>
+ 
+-                      <div className="mt-5 border-t border-slate-100/80 pt-4 dark:border-slate-700 flex-grow">
+-                        <div className="flex items-center justify-between text-sm">
+-                          <div className="flex flex-col">
+-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Próxima data</span>
+-                            <span className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 mt-1 text-xs">
+-                              <CalendarIcon className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+-                              {doc.nextAvailable}
+-                            </span>
+-                          </div>
+-                          <div className="text-right">
+-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-0.5">Consulta</span>
+-                            <span className="text-lg font-black text-slate-900 dark:text-white">R$ {Number(doc.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                          </div>
++                      <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-end justify-between flex-grow">
++                        <div className="flex flex-col">
++                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
++                            Próxima Disponibilidade
++                          </span>
++                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 rounded-md border border-teal-100/50 dark:border-teal-800/50">
++                            <CalendarIcon className="h-3.5 w-3.5" />
++                            {doc.nextAvailable}
++                          </span>
++                        </div>
++                        <div className="text-right flex flex-col items-end">
++                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">
++                            Consulta
++                          </span>
++                          <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
++                            R$ {Number(doc.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
++                          </span>
+                         </div>
+                       </div>
+-
+-                      <div
+-                        className="mt-5 flex w-full items-center justify-center rounded-xl bg-teal-600 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md hover:bg-teal-500 hover:shadow-teal-500/20 hover:-translate-y-0.5 transition-all"
+-                      >
+-                        Agendar consulta
++                      
++                      {/* Button is mostly hidden until hover or shown lightly */}
++                      <div className="mt-5 w-full bg-slate-50 dark:bg-slate-700/30 group-hover:bg-teal-600 dark:group-hover:bg-teal-600 text-slate-600 dark:text-slate-300 group-hover:text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-center transition-all duration-300 border border-slate-200 dark:border-slate-700 group-hover:border-transparent">
++                        Agendar Consulta
+                       </div>
+                     </Link>
+                   ))}
+diff --git a/apps/frontend/src/app/paciente/dashboard/page.tsx b/apps/frontend/src/app/paciente/dashboard/page.tsx
+index f367a85..8674bba 100644
+--- a/apps/frontend/src/app/paciente/dashboard/page.tsx
++++ b/apps/frontend/src/app/paciente/dashboard/page.tsx
+@@ -8,6 +8,7 @@ import { useContext } from "react";
+ 
+ const serviceCards = [
+   { name: "Agendar Consulta", href: "#", icon: CalendarDays, description: "Encontre médicos e agende sua teleconsulta." },
++  { name: "Minhas Consultas", href: "/paciente/consultas", icon: CalendarDays, description: "Visualize e cancele seus agendamentos." },
+   { name: "Meus Atestados", href: "#", icon: FileText, description: "Acesse e baixe todos os seus atestados digitais." },
+   { name: "Minhas Receitas", href: "#", icon: FileText, description: "Visualize e gerencie suas receitas médicas." },
+   { name: "Encontrar Médicos", href: "#", icon: Stethoscope, description: "Busque por especialistas e veja seus perfis." }
+diff --git a/apps/frontend/src/components/sidebar/index.tsx b/apps/frontend/src/components/sidebar/index.tsx
+index 21e3828..d502459 100644
+--- a/apps/frontend/src/components/sidebar/index.tsx
++++ b/apps/frontend/src/components/sidebar/index.tsx
+@@ -19,6 +19,7 @@ export function Sidebar({ closeSidebar, isCollapsed = false, toggleCollapse }: S
+ 
+   const doctorNavigation = [
+     { name: 'Dashboard', href: '/medico/dashboard', icon: LayoutDashboard },
++    { name: 'Consultas', href: '/medico/consultas', icon: List },
+     { name: 'Atestados', href: '/medico/atestados', icon: FileText },
+     { name: 'Receitas', href: '/medico/receitas', icon: FileText },
+     { name: 'Agenda', href: '/medico/agenda', icon: Calendar },

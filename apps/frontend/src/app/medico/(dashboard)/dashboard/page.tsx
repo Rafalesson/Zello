@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { CalendarDays, Calendar, User, Clock, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Calendar, User, Clock, CheckCircle2, Activity } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Modal } from '@/components/common/Modal';
+
 type PatientProfile = {
   name?: string | null;
 };
@@ -29,6 +30,33 @@ const statusBadgeStyles: Record<string, string> = {
   REAGENDADA: 'bg-blue-50 text-blue-700 border-blue-250 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
 };
 
+const isAppointmentMissed = (dateString: string) => {
+  const appTime = new Date(dateString).getTime();
+  const now = new Date().getTime();
+  const windowEnd = appTime + 15 * 60 * 1000; // 15 minutos de tolerância
+  return now > windowEnd;
+};
+
+const isAppointmentStartable = (dateString: string) => {
+  const appTime = new Date(dateString).getTime();
+  const now = new Date().getTime();
+  const windowStart = appTime - 15 * 60 * 1000; // 15 minutos antes
+  const windowEnd = appTime + 15 * 60 * 1000; // 15 minutos depois
+  return now >= windowStart && now <= windowEnd;
+};
+
+const getDisplayStatus = (appointment: AppointmentApi) => {
+  if (appointment.status === 'AGENDADA' && isAppointmentMissed(appointment.date)) {
+    return 'NAO_INICIADA';
+  }
+  return appointment.status;
+};
+
+const formatStatusText = (status: string) => {
+  if (status === 'NAO_INICIADA') return 'NÃO INICIADA';
+  return status;
+};
+
 const formatAppointmentDate = (dateString: string) => {
   try {
     const date = new Date(dateString);
@@ -49,19 +77,36 @@ const formatAppointmentDate = (dateString: string) => {
   }
 };
 
+const getUserInitials = (name?: string | null) => {
+  if (!name) return 'U';
+  const cleaned = name.replace(/^(Dr\.|Dra\.|Dr|Dra)\s*/i, '').trim();
+  const parts = cleaned.split(' ').filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
 
+const getDoctorGreeting = (fullName?: string | null) => {
+  if (!fullName) return 'Doutor(a)';
+  const isFemale = /^(Dra\.|Dra)\s*/i.test(fullName);
+  const isMale = /^(Dr\.|Dr)\s*/i.test(fullName);
+  const nameWithoutPrefix = fullName.replace(/^(Dr\.|Dra\.|Dr|Dra)\s*/i, '').trim();
+  const firstName = nameWithoutPrefix.split(' ')[0] || '';
+  
+  if (isFemale) return `Dra. ${firstName}`;
+  if (isMale) return `Dr. ${firstName}`;
+  return `Dr(a). ${firstName}`;
+};
 
 const fetchDoctorAppointments = async (): Promise<AppointmentApi[]> => {
   const { data } = await api.get<AppointmentApi[]>('/appointments/doctor');
   return data;
 };
 
-
-
 const AppointmentsListSkeleton = () => (
-  <div className="space-y-3 animate-pulse">
+  <div className="space-y-3 animate-pulse flex-grow">
     {[1, 2, 3].map((n) => (
-      <div key={n} className="flex items-center justify-between p-4 border border-gray-100 dark:border-slate-700 rounded-lg">
+      <div key={n} className="flex items-center justify-between p-4 border border-gray-100 dark:border-slate-800 rounded-2xl">
         <div className="space-y-2">
           <div className="h-4 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
           <div className="h-3 w-48 bg-gray-200 dark:bg-slate-700 rounded" />
@@ -73,10 +118,12 @@ const AppointmentsListSkeleton = () => (
 );
 
 const AppointmentsEmptyState = () => (
-  <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-lg h-full my-auto">
-    <CalendarDays className="w-12 h-12 text-gray-400 dark:text-slate-500 mb-3" />
-    <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Nenhuma consulta agendada</h3>
-    <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem novas consultas no momento.</p>
+  <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl h-full my-auto flex-1">
+    <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-full mb-3">
+      <CalendarDays className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+    </div>
+    <h3 className="text-md font-bold text-slate-805 dark:text-slate-200 mb-1">Nenhuma consulta hoje</h3>
+    <p className="text-sm text-slate-500 dark:text-slate-450 max-w-xs">Você está sem compromissos clínicos agendados para a data de hoje.</p>
   </div>
 );
 
@@ -89,6 +136,7 @@ export default function DashboardPage() {
     setSelectedAppointment(appointment);
     setIsModalOpen(true);
   };
+
   const {
     data: appointments,
     isLoading: isLoadingAppointments,
@@ -105,9 +153,20 @@ export default function DashboardPage() {
     return 'Boa noite';
   }, []);
 
-  const todayAppointmentsCount = useMemo(() => {
-    if (!appointments) return 0;
-    
+  const formattedDate = useMemo(() => {
+    const todayFormatted = new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    return todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1);
+  }, []);
+
+  const todayStats = useMemo(() => {
+    const stats = { total: 0, agendadas: 0, realizadas: 0, naoIniciadas: 0, canceladas: 0 };
+    if (!appointments) return stats;
+
     const formatter = new Intl.DateTimeFormat('sv-SE', {
       timeZone: 'America/Sao_Paulo',
       year: 'numeric',
@@ -115,131 +174,263 @@ export default function DashboardPage() {
       day: '2-digit',
     });
     const todayStr = formatter.format(new Date());
-    
-    return appointments.filter((app) => {
+
+    appointments.forEach((app) => {
       try {
         const appDate = new Date(app.date);
         const appStr = formatter.format(appDate);
-        return appStr === todayStr;
+        if (appStr === todayStr) {
+          stats.total++;
+          const status = getDisplayStatus(app);
+          if (status === 'AGENDADA') stats.agendadas++;
+          else if (status === 'REALIZADA') stats.realizadas++;
+          else if (status === 'NAO_INICIADA') stats.naoIniciadas++;
+          else if (status === 'CANCELADA') stats.canceladas++;
+        }
       } catch (e) {
-        return false;
+        // ignore
       }
-    }).length;
+    });
+
+    return stats;
   }, [appointments]);
 
   const nextAppointment = useMemo(() => {
     if (!appointments) return null;
-    const now = new Date().getTime();
     return appointments
       .slice()
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .find(app => app.status === 'AGENDADA' && new Date(app.date).getTime() >= now) || null;
+      .find(app => app.status === 'AGENDADA' && !isAppointmentMissed(app.date)) || null;
+  }, [appointments]);
+
+  const todayAppointments = useMemo(() => {
+    if (!appointments) return [];
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const todayStr = formatter.format(new Date());
+
+    return appointments
+      .filter(app => {
+        try {
+          return formatter.format(new Date(app.date)) === todayStr;
+        } catch (e) {
+          return false;
+        }
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [appointments]);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Modern Greeting Banner */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm transition-colors">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">
-            {greeting}, Dr(a). {user?.doctorProfile?.name?.split(' ')[0] || ''}!
+          <span className="text-[10px] font-extrabold text-teal-600 dark:text-teal-400 uppercase tracking-widest bg-teal-50 dark:bg-teal-950/40 px-3 py-1 rounded-full border border-teal-100/50 dark:border-teal-900/30">
+            Command Center
+          </span>
+          <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight mt-3">
+            {greeting}, {getDoctorGreeting(user?.doctorProfile?.name)}!
           </h1>
-          <p className="text-gray-500 dark:text-slate-400 mt-1">Aqui está o resumo da sua rotina clínica hoje.</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+            Aqui está o resumo da sua rotina clínica hoje.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/40 px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-800 w-fit">
+          <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          <div className="flex flex-col">
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">Hoje</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {formattedDate}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full">
-          {isLoadingAppointments ? (
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 dark:border-slate-600 border-t-teal-500" />
-          ) : (
-            <h3 className="text-5xl font-bold text-gray-800 dark:text-slate-100">
-              {todayAppointmentsCount}
-            </h3>
-          )}
-          <p className="text-gray-500 dark:text-slate-400 mt-2 font-medium">Consultas Hoje</p>
-        </div>
-        
+      {/* Main Stats and Next Appointment Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Next Appointment Card */}
         {nextAppointment ? (
-          <div className="lg:col-span-2 p-6 bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-900/80 dark:to-teal-800/60 dark:border dark:border-teal-500/40 dark:shadow-[0_0_25px_rgba(20,184,166,0.15)] rounded-lg shadow-md flex flex-col justify-center h-full text-white relative overflow-hidden">
-             <div className="absolute -top-4 -right-4 p-6 opacity-10 dark:opacity-10 dark:text-teal-400 pointer-events-none">
-               <Calendar className="w-48 h-48" />
-             </div>
-             <div className="relative z-10">
-               <h3 className="text-teal-100 dark:text-teal-300 font-medium mb-1">Próxima Consulta</h3>
-               <h2 className="text-2xl font-bold mb-2 dark:text-white">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
-               <div className="flex items-center gap-2 text-teal-50 dark:text-teal-50/90">
-                 <Clock className="w-4 h-4" />
-                 <span>{formatAppointmentDate(nextAppointment.date)}</span>
-               </div>
-               <div className="mt-5 flex gap-3">
-                 <button className="px-4 py-2 bg-white dark:bg-teal-400 text-teal-700 dark:text-teal-950 font-bold rounded-md shadow-sm hover:bg-teal-50 dark:hover:bg-teal-300 dark:shadow-[0_0_15px_rgba(45,212,191,0.3)] transition-all">
-                   Iniciar Atendimento
-                 </button>
-                 <button 
-                   onClick={() => handleOpenDetails(nextAppointment)}
-                   className="px-4 py-2 bg-teal-700/50 dark:bg-teal-900/40 hover:bg-teal-700 dark:hover:bg-teal-800/60 border border-teal-400/30 dark:border-teal-500/40 text-white dark:text-teal-100 font-semibold rounded-md transition-colors"
-                 >
-                   Detalhes
-                 </button>
-               </div>
-             </div>
+          <div className="p-6 bg-gradient-to-br from-teal-600 to-teal-800 dark:from-teal-800 dark:to-teal-950 rounded-2xl shadow-lg shadow-teal-600/10 dark:shadow-none flex flex-col justify-between min-h-[220px] text-white relative overflow-hidden group border border-teal-500/20">
+            <div className="absolute -top-10 -right-10 p-6 opacity-10 pointer-events-none transform transition-transform group-hover:scale-110 duration-500">
+              <Calendar className="w-48 h-48" />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-teal-100/90 dark:text-teal-350 font-extrabold uppercase tracking-wider text-[10px] bg-white/10 dark:bg-black/25 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                    Próxima Consulta
+                  </span>
+                  <div className="flex items-center gap-1.5 text-teal-100/90 text-xs bg-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{formatAppointmentDate(nextAppointment.date)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center font-bold text-white border border-white/10 text-lg shadow-inner">
+                    {getUserInitials(nextAppointment.patientProfile?.name)}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight leading-none">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
+                    <span className="text-xs text-teal-200/80 mt-1 block">Teleconsulta Agendada</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                {isAppointmentStartable(nextAppointment.date) ? (
+                  <button
+                    onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
+                    className="flex-1 py-3 bg-white text-teal-800 font-bold rounded-xl shadow-md hover:bg-teal-50 active:scale-[0.98] transition-all text-sm"
+                  >
+                    Iniciar Atendimento
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="flex-1 py-3 bg-teal-900/30 text-teal-300/50 font-bold rounded-xl cursor-not-allowed border border-teal-500/20 text-sm"
+                  >
+                    Aguarde o Horário
+                  </button>
+                )}
+                <button
+                  onClick={() => handleOpenDetails(nextAppointment)}
+                  className="py-3 px-4 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold rounded-xl active:scale-[0.98] transition-all text-sm"
+                >
+                  Ver Detalhes
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center justify-center h-full border border-dashed border-gray-200 dark:border-slate-700">
-             <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Agenda Livre</h3>
-             <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem próximas consultas pendentes.</p>
+          <div className="p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group min-h-[220px]">
+            <div className="p-4 bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
+              <Calendar className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-1">Sem mais consultas hoje</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+              Sua agenda está livre. Aproveite para descansar ou revisar prontuários de consultas passadas.
+            </p>
           </div>
         )}
+
+        {/* Daily Stats Grid */}
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
+              Resumo do Dia
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/30 px-2.5 py-1 rounded-full">
+              <Activity className="w-3.5 h-3.5" />
+              <span>{todayStats.total} Atendimentos</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            {/* Agendadas */}
+            <div className="p-4 bg-amber-50/40 dark:bg-amber-950/10 rounded-xl border border-amber-100/50 dark:border-amber-900/20 flex flex-col justify-between hover:border-amber-300 transition-colors">
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Agendadas</span>
+              <span className="text-3xl font-black text-amber-800 dark:text-amber-300 mt-2">{todayStats.agendadas}</span>
+            </div>
+
+            {/* Realizadas */}
+            <div className="p-4 bg-emerald-50/40 dark:bg-emerald-950/10 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex flex-col justify-between hover:border-emerald-300 transition-colors">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Realizadas</span>
+              <span className="text-3xl font-black text-emerald-800 dark:text-emerald-300 mt-2">{todayStats.realizadas}</span>
+            </div>
+
+            {/* Não Iniciadas */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-200/50 dark:border-slate-700/30 flex flex-col justify-between hover:border-slate-400 transition-colors">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Não Iniciadas</span>
+              <span className="text-3xl font-black text-slate-700 dark:text-slate-300 mt-2">{todayStats.naoIniciadas}</span>
+            </div>
+
+            {/* Canceladas */}
+            <div className="p-4 bg-rose-50/40 dark:bg-rose-950/10 rounded-xl border border-rose-100/50 dark:border-rose-900/20 flex flex-col justify-between hover:border-rose-300 transition-colors">
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">Canceladas</span>
+              <span className="text-3xl font-black text-rose-800 dark:text-rose-300 mt-2">{todayStats.canceladas}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Lista Geral de Consultas */}
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col h-[520px]">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-650 dark:text-teal-400" />
-            Consultas
-          </h2>
+      {/* Timeline and Pending Actions Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Timeline Component */}
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col min-h-[380px]">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              Agenda de Hoje
+            </h2>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-bold bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md">
+              {todayAppointments?.length || 0} Compromissos
+            </span>
+          </div>
 
           {isLoadingAppointments && <AppointmentsListSkeleton />}
 
           {isAppointmentsError && (
-            <p className="text-red-500">Ocorreu um erro ao buscar as consultas.</p>
+            <p className="text-red-500 text-sm">Ocorreu um erro ao buscar as consultas.</p>
           )}
 
           {!isLoadingAppointments && !isAppointmentsError && (
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar flex flex-col">
-              {appointments && appointments.length > 0 ? (
-                appointments.map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    onClick={() => handleOpenDetails(appointment)}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-150 dark:border-slate-700 hover:border-teal-500/30 dark:hover:border-teal-400/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 cursor-pointer transition-all duration-200 shadow-sm"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-teal-50 dark:bg-teal-950/30 rounded-lg text-teal-600 dark:text-teal-400">
-                        <User className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 dark:text-slate-100">
-                          {appointment.patientProfile?.name || 'Paciente'}
-                        </h4>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 mt-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatAppointmentDate(appointment.date)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                          statusBadgeStyles[appointment.status] || ''
-                        }`}
+            <div className="flex-grow flex flex-col space-y-4">
+              {todayAppointments && todayAppointments.length > 0 ? (
+                <div className="relative border-l border-slate-100 dark:border-slate-700 pl-4 ml-3 space-y-4 my-2 flex-grow">
+                  {todayAppointments.map((appointment) => {
+                    const status = getDisplayStatus(appointment);
+                    const appTime = new Date(appointment.date).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'America/Sao_Paulo',
+                    });
+                    
+                    const statusColors: Record<string, string> = {
+                      AGENDADA: 'bg-amber-500',
+                      REALIZADA: 'bg-emerald-500',
+                      NAO_INICIADA: 'bg-slate-400',
+                      CANCELADA: 'bg-rose-500',
+                    };
+                    const color = statusColors[status] || 'bg-teal-500';
+
+                    return (
+                      <div
+                        key={appointment.id}
+                        onClick={() => handleOpenDetails(appointment)}
+                        className="group relative flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/50 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                       >
-                        {appointment.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                        <div className={`absolute -left-[21px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${color} border-2 border-white dark:border-slate-900 z-10 transition-transform group-hover:scale-125`} />
+                        
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-black text-slate-700 dark:text-slate-200 min-w-[45px]">
+                            {appTime}
+                          </span>
+                          
+                          <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-300 text-xs">
+                            {getUserInitials(appointment.patientProfile?.name)}
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors text-sm">
+                              {appointment.patientProfile?.name || 'Paciente'}
+                            </h4>
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold tracking-wider uppercase mt-0.5">
+                              Teleconsulta
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-extrabold tracking-wider border uppercase ${statusBadgeStyles[status] || ''}`}>
+                          {formatStatusText(status)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <AppointmentsEmptyState />
               )}
@@ -247,22 +438,27 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Tarefas Pendentes */}
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col h-[520px]">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-teal-650 dark:text-teal-400" />
-            Tarefas Pendentes
+        {/* Action checklist widget */}
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 flex flex-col min-h-[380px] h-full">
+          <h2 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            Ações Necessárias
           </h2>
 
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-lg">
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-full mb-3">
-              <CheckCircle2 className="w-8 h-8 text-green-500 dark:text-green-400" />
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl my-auto">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-full mb-3 relative">
+              <span className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping pointer-events-none" />
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 relative z-10" />
             </div>
-            <h3 className="text-lg font-medium text-gray-700 dark:text-slate-200 mb-1">Tudo em dia!</h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Você não tem prontuários pendentes ou assinaturas aguardando.</p>
+            <h3 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-1">Tudo em dia!</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+              Você não possui prontuários pendentes, assinaturas digitais ou laudos aguardando sua revisão.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Details Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -270,81 +466,88 @@ export default function DashboardPage() {
         maxWidth="max-w-lg"
       >
         {selectedAppointment && (
-          <div className="flex flex-col gap-5 mt-2">
-            {/* Paciente Header */}
-            <div className="flex items-center gap-4 p-4 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30 rounded-xl">
-              <div className="w-12 h-12 bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0">
-                <User size={24} />
+          <div className="flex flex-col gap-6 mt-4">
+            {/* Patient Header */}
+            <div className="flex items-center gap-4 p-4 bg-teal-50/50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/50 rounded-xl">
+              <div className="w-12 h-12 bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                {getUserInitials(selectedAppointment.patientProfile?.name)}
               </div>
               <div>
-                <p className="text-xs font-semibold tracking-wider text-teal-600/80 dark:text-teal-400/80 uppercase mb-0.5">Paciente</p>
+                <p className="text-[10px] font-extrabold tracking-wider text-teal-600/80 dark:text-teal-400/80 uppercase mb-0.5">Paciente</p>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 leading-none">
                   {selectedAppointment.patientProfile?.name || 'N/A'}
                 </h3>
               </div>
             </div>
 
-            {/* Dados Demográficos */}
+            {/* Demographics Card */}
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
-                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Idade</span>
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Idade</span>
                 <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate">32 anos</span>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
-                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">CPF</span>
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">CPF</span>
                 <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate">123.456.789-00</span>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl flex flex-col justify-center overflow-hidden">
-                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Sexo</span>
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Sexo</span>
                 <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate">Feminino</span>
               </div>
             </div>
 
-            {/* Informações da Consulta */}
+            {/* Appointment Details */}
             <div className="p-4 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700 rounded-xl">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-600">
+                  <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">
                     <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   </div>
                   <div>
-                    <span className="block text-xs text-gray-500 dark:text-slate-400 font-medium mb-0.5">Agendamento</span>
+                    <span className="block text-[10px] text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">Agendamento</span>
                     <span className="block text-sm font-bold text-gray-800 dark:text-slate-200">
                       {formatAppointmentDate(selectedAppointment.date)}
                     </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="block text-xs text-gray-500 dark:text-slate-400 font-medium mb-1">Status</span>
-                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadgeStyles[selectedAppointment.status] || ''}`}>
-                    {selectedAppointment.status}
+                  <span className="block text-[10px] text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Status</span>
+                  <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase border ${statusBadgeStyles[getDisplayStatus(selectedAppointment)] || ''}`}>
+                    {formatStatusText(getDisplayStatus(selectedAppointment))}
                   </span>
                 </div>
               </div>
             </div>
-             
-             {/* Rodapé e Ações */}
-             <div className="pt-4 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center gap-3">
-               <button 
-                 onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')} 
-                 className="px-4 py-2 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-500 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none"
-               >
-                 Reagendar
-               </button>
-               <div className="flex gap-2">
-                 <button 
-                   onClick={() => setIsModalOpen(false)} 
-                   className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors focus:ring-2 focus:ring-gray-400 focus:outline-none"
-                 >
-                   Fechar
-                 </button>
-                 {selectedAppointment.status === 'AGENDADA' && (
-                   <button className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-sm shadow-teal-600/30 transition-all focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900">
-                     Iniciar Consulta
-                   </button>
-                 )}
-               </div>
-             </div>
+
+            {/* Actions Footer */}
+            <div className="pt-6 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between gap-3 items-center w-full">
+              {getDisplayStatus(selectedAppointment) === 'AGENDADA' ? (
+                <button
+                  onClick={() => alert('Fluxo de cancelamento de consulta ainda não implementado no Backend.')}
+                  className="px-4 py-2 bg-red-50 text-red-650 dark:bg-red-950/20 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+                >
+                  Cancelar Consulta
+                </button>
+              ) : (
+                <div />
+              )}
+
+              <button
+                onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')}
+                className="px-4 py-2 bg-amber-50 text-amber-605 dark:bg-amber-950/20 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+              >
+                Reagendar
+              </button>
+
+              {selectedAppointment.status === 'AGENDADA' && isAppointmentStartable(selectedAppointment.date) && (
+                <button
+                  onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
+                  className="px-4 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+                >
+                  Iniciar Consulta
+                </button>
+              )}
+            </div>
           </div>
         )}
       </Modal>

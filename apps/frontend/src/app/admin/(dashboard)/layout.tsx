@@ -4,7 +4,7 @@
 import { useState, Fragment, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Dialog, Transition } from '@headlessui/react';
-import { Menu } from 'lucide-react';
+import { Menu, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useRouter } from 'next/navigation';
 
@@ -91,7 +91,12 @@ export default function AdminDashboardLayout({
             <span className="sr-only">Abrir menu</span>
             <Menu className="h-6 w-6" aria-hidden="true" />
           </button>
-          <div className="text-lg font-bold text-teal-600">Zello</div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter select-none">Zello</span>
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">

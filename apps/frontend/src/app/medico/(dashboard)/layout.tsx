@@ -4,7 +4,7 @@
 import { useState, Fragment, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Dialog, Transition } from '@headlessui/react';
-import { Menu, Clock, XCircle, LogOut } from 'lucide-react';
+import { Menu, Clock, XCircle, LogOut, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -65,7 +65,12 @@ export default function DoctorDashboardLayout({
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 dark:bg-slate-900 transition-colors relative pt-20">
         {/* Simple Header Menu */}
         <header className="absolute top-0 inset-x-0 flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-6 md:px-10 transition-colors">
-          <span className="text-2xl font-bold text-teal-600 dark:text-teal-400 select-none">Zello</span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter select-none">Zello</span>
+          </div>
           <ThemeToggle />
         </header>
 
@@ -166,7 +171,12 @@ export default function DoctorDashboardLayout({
             <span className="sr-only">Abrir menu</span>
             <Menu className="h-6 w-6" aria-hidden="true" />
           </button>
-          <div className="text-lg font-bold text-teal-600">Zello</div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter select-none">Zello</span>
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">

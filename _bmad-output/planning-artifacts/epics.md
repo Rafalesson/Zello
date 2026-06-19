@@ -25,6 +25,7 @@ This document provides the complete epic and story breakdown for ImNotMedical, d
 - **FR10:** Paciente pode visualizar o perfil público do médico (foto, nome, CRM, especialidade, bio)
 - **FR11:** Paciente pode agendar uma consulta em um slot disponível do médico
 - **FR12:** Paciente pode cancelar uma consulta agendada
+- **FR12b:** Médico pode cancelar ou reagendar uma consulta agendada
 - **FR13:** Médico pode visualizar suas consultas agendadas no dashboard
 - **FR14:** Sistema envia notificação por email de confirmação e lembrete de consulta
 - **FR15:** Paciente pode preencher questionário de pré-triagem com informações clínicas antes da consulta
@@ -131,6 +132,7 @@ This document provides the complete epic and story breakdown for ImNotMedical, d
 - **FR10:** Epic 1 - Perfil público do médico
 - **FR11:** Epic 2 - Agendar consulta
 - **FR12:** Epic 2 - Cancelar consulta
+- **FR12b:** Epic 2 - Médico cancelar/reagendar consulta
 - **FR13:** Epic 2 - Médico visualizar agenda
 - **FR14:** Epic 2 - Notificação por email
 - **FR15:** Epic 3 - Preencher pré-triagem
@@ -165,6 +167,8 @@ This document provides the complete epic and story breakdown for ImNotMedical, d
 - **FR44:** Epic 1 - Disclaimer acadêmico (global)
 - **FR45:** Epic 1 - Política de privacidade
 - **FR46:** Epic 3 - Incompatibilidade browser/devices
+- **FR47:** Epic 7 - Login com username (nome.sobrenome) e sugestão de indisponibilidade
+- **FR48:** Epic 7 - Evolução das configurações de perfil (upload real de foto e edição de credenciais)
 
 ## Epic List
 
@@ -174,7 +178,7 @@ Pacientes e médicos podem criar contas, gerenciar perfis e acessar a plataforma
 
 ### Epic 2: Scheduling & Availability (Agendamento de Consultas)
 Médicos podem publicar suas agendas e pacientes podem buscar especialistas e marcar horários, estabelecendo a conexão inicial no marketplace.
-**FRs covered:** FR8, FR9, FR11, FR12, FR13, FR14
+**FRs covered:** FR8, FR9, FR11, FR12, FR12b, FR13, FR14
 
 ### Epic 3: Patient Pre-Consultation (Check-in & Preparação)
 Pacientes podem se preparar para a consulta preenchendo a triagem, aceitando os termos legais e testando seus dispositivos antes de entrar na sala de espera (redução de atrito técnico e compliance).
@@ -191,6 +195,10 @@ Médicos podem registrar o atendimento clínico de forma eficiente e emitir docu
 ### Epic 6: Platform Operations & Governance (Painel Admin)
 Administradores podem monitorar a saúde da plataforma, auditar logs de consulta, forçar transições de estado paradas e garantir o expurgo de dados pela LGPD.
 **FRs covered:** FR39, FR40, FR41, FR42, FR43
+
+### Epic 7: User Profile Evolution & Authentication Enhancements
+Evolução das configurações de perfil de usuário com upload real de imagens, alteração de credenciais e nova funcionalidade de login com username formatado (nome.sobrenome) com sistema de sugestões em caso de conflitos.
+**FRs covered:** FR47, FR48
 
 ## Epic 1: Identity & Profiles (Onboarding & Acesso)
 
@@ -392,6 +400,55 @@ So that I can free up the slot if I am unable to attend.
 **When** they click "Cancel" on an appointment
 **Then** the status of the consultation is updated to `cancelada` (FR12, FR21)
 **And** the time slot becomes available again for other patients to book.
+
+### Story 2.7: Doctor Cancellation & Rescheduling Flow
+
+As a Doctor,
+I want to be able to cancel or reschedule an upcoming consultation,
+So that I can manage my availability if unforeseen events occur.
+
+**Acceptance Criteria:**
+
+**Given** a doctor viewing their dashboard or appointment details
+**When** they choose to cancel an appointment
+**Then** the status is updated to `cancelada` and the patient is notified (FR12b)
+
+**Given** a doctor needing to reschedule
+**When** they initiate the rescheduling flow and provide a justification
+**Then** the patient is notified of the proposed new slot or cancellation (FR12b)
+**And** the original time slot becomes available.
+
+### Story 2.8: Patient Journey Redesign
+
+As a Patient,
+I want a modern, card-based interface for managing my profile and appointments,
+So that I have a professional, SaaS-like experience instead of a basic data table.
+
+**Acceptance Criteria:**
+
+**Given** a patient accessing the settings or appointments pages
+**When** the pages load
+**Then** the layout follows the SaaS dashboard principles with responsive cards
+**And** dynamic status tags are correctly calculated and displayed.
+
+### Story 2.9: Patient Appointment Rescheduling Flow
+
+As a Patient,
+I want to be able to reschedule an upcoming consultation directly from my dashboard,
+So that I can change my appointment time without having to manually cancel and re-book.
+
+**Acceptance Criteria:**
+
+**Given** a patient viewing their upcoming appointments
+**When** they click "Remarcar" on an appointment that is at least 3 hours away
+**Then** a modal opens displaying the doctor's available dates and times
+**And** they can select a new slot.
+
+**Given** the patient selects a new slot and confirms
+**When** the request is sent
+**Then** the system updates the appointment date and time (PATCH /appointments/:id/reschedule)
+**And** the previous time slot is restored to the doctor's availability
+**And** an email notification is sent to the doctor informing them of the change.
 
 ## Epic 3: Patient Pre-Consultation (Check-in & Preparação)
 
@@ -684,3 +741,46 @@ So that the platform complies with data retention policies (LGPD).
 **Given** an admin in the dashboard
 **When** they click the manual cleanup trigger
 **Then** the cleanup process runs immediately and returns a success report (FR42).
+
+## Epic 7: User Profile Evolution & Authentication Enhancements
+
+Evolução das configurações de perfil de usuário com upload real de imagens, alteração de credenciais e nova funcionalidade de login com username formatado (nome.sobrenome) com sistema de sugestões em caso de conflitos.
+
+### Story 7.1: Custom Username Login & Formatted Suggestions
+
+As a User,
+I want to be able to login using a unique username formatted as `name.lastname` instead of just my email,
+So that I have a memorable and standard way to access the platform.
+
+**Acceptance Criteria:**
+
+**Given** a user is registering for a new account
+**When** the system generates or requests a username
+**Then** it must attempt to format it as `nome.sobrenome` (FR47)
+**And** the `login` field must be unique in the database.
+
+**Given** the requested username is already taken
+**When** the user attempts to register
+**Then** the system prevents the registration
+**And** returns a list of available alternative usernames involving the user's full name (e.g., `nome.sobrenome123`, `nome.sobrenome.santos`).
+
+**Given** a user is on the login page
+**When** they attempt to login
+**Then** they can use either their email OR their custom username (login) alongside their password to authenticate successfully.
+
+### Story 7.2: Doctor Profile Settings & Photo Upload Integration
+
+As a Doctor,
+I want to be able to fully manage my profile settings, including uploading a new profile picture and updating my CRM, email, and login,
+So that my profile stays accurate and up-to-date without needing admin intervention.
+
+**Acceptance Criteria:**
+
+**Given** a doctor is on the "Configurações" page
+**When** they update their email, login, or CRM and submit the form
+**Then** the backend securely processes the update, validating uniqueness and formatting (FR48).
+
+**Given** a doctor clicks to change their profile photo
+**When** they select a new image file
+**Then** the system uploads the image to Cloudinary (or similar storage)
+**And** updates the `profilePictureUrl` in the database, updating the UI immediately.

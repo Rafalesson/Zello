@@ -51,5 +51,19 @@ describe('UserController', () => {
       });
       expect(result).toEqual([]);
     });
+
+    it('should be publicly accessible (no AuthGuard)', () => {
+      const guards = Reflect.getMetadata('__guards__', UserController.prototype.getDoctors);
+      const hasAuthGuard = guards && guards.some((guard: any) => guard === require('src/auth/auth.guard').AuthGuard || guard.name === 'AuthGuard');
+      expect(hasAuthGuard).toBeFalsy();
+    });
+  });
+
+  describe('getPublicDoctorProfile', () => {
+    it('should be publicly accessible (no AuthGuard)', () => {
+      const guards = Reflect.getMetadata('__guards__', UserController.prototype.getPublicDoctorProfile);
+      const hasAuthGuard = guards && guards.some((guard: any) => guard === require('src/auth/auth.guard').AuthGuard || guard.name === 'AuthGuard');
+      expect(hasAuthGuard).toBeFalsy();
+    });
   });
 });

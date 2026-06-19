@@ -16,6 +16,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { api } from '@/services/api';
 import { CalendarStrip } from '@/components/consultation/CalendarStrip';
+import { useAuth } from '@/contexts/AuthProvider';
+import { AuthContextModal } from '@/components/common/AuthContextModal';
 
 interface Availability {
   dayOfWeek: number;
@@ -36,11 +38,13 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'success'>('idle');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   // Custom toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
 
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const formattedDateQuery = format(selectedDate, 'yyyy-MM-dd');
 
@@ -89,7 +93,7 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
     setBookingStatus('idle');
   };
 
-  const handleConfirmBooking = () => {
+  const executeBooking = () => {
     if (!selectedDate || !selectedSlot) return;
     
     // Find the slot to get the full ISO date string
@@ -99,8 +103,26 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
     bookMutation.mutate(slot.date);
   };
 
+  const handleConfirmBooking = () => {
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    executeBooking();
+  };
+
+  const onAuthSuccess = () => {
+    setIsAuthModalOpen(false);
+    executeBooking();
+  };
+
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-800 sticky top-24 transition-all relative overflow-hidden">
+      <AuthContextModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSuccess={onAuthSuccess} 
+      />
       
       {/* Toast Notification */}
       {toast.type && (

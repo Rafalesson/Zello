@@ -87,11 +87,14 @@ export class UserController {
     return this.userService.searchDoctors({ query, specialty, city, state });
   }
 
-  // Endpoint para atualizar configurações do médico (como preço da consulta)
+  // Endpoint para atualizar configurações do médico
   @Patch('doctors/me')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  async updateMyDoctorProfile(@Request() req, @Body() body: { consultationPrice?: number }) {
+  async updateMyDoctorProfile(
+    @Request() req,
+    @Body() body: { name?: string; phone?: string; specialty?: string; bio?: string; consultationPrice?: number; address?: string; city?: string; state?: string; zipCode?: string; email?: string; login?: string; crm?: string },
+  ) {
     return this.userService.updateDoctorProfile(req.user.id, body);
   }
 }

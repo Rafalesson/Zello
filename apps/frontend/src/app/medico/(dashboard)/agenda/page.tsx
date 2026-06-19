@@ -367,18 +367,10 @@ export default function AgendaPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-teal-50 dark:bg-teal-950/40">
-          <Calendar className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            Configurar Agenda
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Defina seus horários de atendimento por dia da semana
-          </p>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Agenda</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configure seus horários de atendimento e valor de consulta.</p>
         </div>
       </div>
 

@@ -16,6 +16,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthProvider';
+import { AuthContextModal } from '@/components/common/AuthContextModal';
+import { DoctorPublicCard } from '@/components/common/DoctorPublicCard';
 
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=320&q=80';
 
@@ -46,12 +49,16 @@ function MedicosContent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { isAuthenticated, user } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingSlot, setPendingSlot] = useState<{ doctorId: number; date: Date } | null>(null);
+
   // Filter states
   const [selectedSpecialty, setSelectedSpecialty] = useState(query);
   const [selectedLocation, setSelectedLocation] = useState(location);
   const [onlyTelehealth, setOnlyTelehealth] = useState(false);
   const [onlyInPerson, setOnlyInPerson] = useState(false);
-  const [availabilityFilter, setAvailabilityFilter] = useState('Qualquer dia');
+
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('Recomendados');
 
@@ -146,12 +153,7 @@ function MedicosContent() {
     if (maxPrice && doc.price > maxPrice) {
       return false;
     }
-    if (availabilityFilter === 'Hoje') {
-      return doc.nextAvailable.toLowerCase().includes('hoje');
-    }
-    if (availabilityFilter === 'Amanhã') {
-      return doc.nextAvailable.toLowerCase().includes('amanhã');
-    }
+
     return true;
   });
 
@@ -171,14 +173,37 @@ function MedicosContent() {
     setSelectedLocation('');
     setOnlyTelehealth(false);
     setOnlyInPerson(false);
-    setAvailabilityFilter('Qualquer dia');
+
     setMaxPrice(null);
     updateURL('', '');
+  };
+
+  const handleSlotClick = (doctorId: number, date: Date) => {
+    if (!isAuthenticated) {
+      setPendingSlot({ doctorId, date });
+      setIsAuthModalOpen(true);
+    } else {
+      router.push(`/paciente/consultas/nova?doctor=${doctorId}&date=${date.toISOString()}`);
+    }
+  };
+
+  const onAuthSuccess = () => {
+    setIsAuthModalOpen(false);
+    if (pendingSlot) {
+      router.push(`/paciente/consultas/nova?doctor=${pendingSlot.doctorId}&date=${pendingSlot.date.toISOString()}`);
+    } else if (user?.role === 'PATIENT') {
+      router.push('/paciente/dashboard');
+    }
   };
 
   return (
     <>
       <Header />
+      <AuthContextModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSuccess={onAuthSuccess} 
+      />
       
       <main className="flex-grow pt-[72px]">
         {/* Theme-dependent header banner (teal-gradient in light mode, slate-gradient in dark mode) */}
@@ -290,31 +315,6 @@ function MedicosContent() {
                     </div>
                   </div>
 
-                  {/* Availability Filter (Dark mode fixes applied here) */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      Próxima Disponibilidade
-                    </label>
-                    <div className="mt-3 grid grid-cols-3 gap-1.5">
-                      {['Qualquer dia', 'Hoje', 'Amanhã'].map((day) => {
-                        const isSelected = availabilityFilter === day;
-                        return (
-                          <button
-                            key={day}
-                            onClick={() => setAvailabilityFilter(day)}
-                            className={`rounded-lg py-2 text-xs font-bold border transition-all ${
-                              isSelected
-                                ? 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-800 dark:text-teal-400 shadow-sm'
-                                : 'bg-transparent border-slate-200 hover:bg-slate-50 text-slate-700 dark:border-slate-750 dark:hover:bg-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {day.split(' ')[0]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Price Filter */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -406,65 +406,15 @@ function MedicosContent() {
                     Ver todos os médicos
                   </button>
                 </div>
+
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                   {sortedDoctors.map((doc) => (
-                    <Link key={doc.id} href={`/medico/${doc.id}`} className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/65 dark:bg-slate-800 dark:ring-slate-705 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:-translate-y-1">
-                      <div className="flex items-start gap-4">
-                        <div className="relative h-16 w-16 flex-shrink-0">
-                          <Image
-                            src={doc.profilePictureUrl || DEFAULT_AVATAR}
-                            alt={doc.name}
-                            fill
-                            className="rounded-full object-cover shadow-sm ring-2 ring-slate-100 dark:ring-slate-700"
-                            sizes="64px"
-                          />
-                          <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-800" />
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="font-extrabold text-slate-900 dark:text-white leading-tight">{doc.name}</h3>
-                          <p className="text-xs font-bold tracking-wide text-teal-600 dark:text-teal-400 uppercase mt-0.5">{doc.specialty || 'Clínico Geral'}</p>
-                          <p className="text-[11px] font-semibold text-slate-450 dark:text-slate-500">{doc.crm}</p>
-                          
-                          <div className="mt-2.5 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md">
-                            <Star className="h-3 w-3 fill-amber-400 text-amber-450" />
-                            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-400">{doc.rating}</span>
-                            <span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium">({doc.reviews} avaliações)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-1.5">
-                        {doc.tags.map((tag: string) => (
-                          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 ring-1 ring-inset ring-slate-200/70 dark:bg-slate-700/50 dark:text-slate-400 dark:ring-slate-600/80">
-                            {tag === 'Teleconsulta' && <Video className="h-3 w-3 text-teal-655 dark:text-teal-405" />}
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="mt-5 border-t border-slate-100/80 pt-4 dark:border-slate-700 flex-grow">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Próxima data</span>
-                            <span className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 mt-1 text-xs">
-                              <CalendarIcon className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                              {doc.nextAvailable}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-0.5">Consulta</span>
-                            <span className="text-lg font-black text-slate-900 dark:text-white">R$ {Number(doc.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className="mt-5 flex w-full items-center justify-center rounded-xl bg-teal-600 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md hover:bg-teal-500 hover:shadow-teal-500/20 hover:-translate-y-0.5 transition-all"
-                      >
-                        Agendar consulta
-                      </div>
-                    </Link>
+                    <DoctorPublicCard 
+                      key={doc.id} 
+                      doctor={doc} 
+                      onSlotClick={handleSlotClick} 
+                    />
                   ))}
                 </div>
               )}

@@ -163,6 +163,7 @@ model Appointment {
   patientProfileId Int
   date             DateTime
   status           ConsultationStatus @default(AGENDADA)
+  cancellationReason String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
