@@ -181,7 +181,7 @@ const allTemplates = {
               a partir de <strong>12/07/2026</strong>, por motivos de saúde.
             </p>
             <div class="details">
-              <div class="detailItem"><span>Responsável legal:</span><p>Priscila Alessandra Silva dos Santos</p></div>
+              <div class="detailItem"><span>Responsável legal</span><p>Priscila Alessandra Silva dos Santos</p></div>
               <div class="detailItem"><span>Finalidade</span><p>{{purpose}}</p></div>
               <div class="detailItem"><span>CID-10</span><p>{{cidCode}} - {{cidDescription}}</p></div>
             </div>
