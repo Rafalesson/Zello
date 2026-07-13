@@ -181,6 +181,7 @@ const allTemplates = {
               a partir de <strong>12/07/2026</strong>, por motivos de saúde.
             </p>
             <div class="details">
+              <div class="detailItem"><strong>FResponsável legal:</strong><p>Priscila Alessandra Silva dos Santos</p></div>
               <div class="detailItem"><span>Finalidade</span><p>{{purpose}}</p></div>
               <div class="detailItem"><span>CID-10</span><p>{{cidCode}} - {{cidDescription}}</p></div>
             </div>
@@ -252,6 +253,7 @@ const allTemplates = {
               habituais por um período de <strong>{{durationInDays}} 
               ({{durationInWords}})</strong> dia(s), a contar de <strong>10/07/2026</strong>.
             </p>
+            <div class="detailItem"><strong>FResponsável legal:</strong><p>Priscila Alessandra Silva dos Santos</p></div>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
