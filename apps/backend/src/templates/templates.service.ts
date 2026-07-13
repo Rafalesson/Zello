@@ -253,7 +253,7 @@ const allTemplates = {
               habituais por um período de <strong>{{durationInDays}} 
               ({{durationInWords}})</strong> dia(s), a contar de <strong>10/07/2026</strong>.
             </p>
-            <p class="detailItem"><strong>Responsável legal:</strong>Priscila Alessandra Silva dos Santos</p>
+            <p class="detailItem"><strong>Responsável legal:</strong> Priscila Alessandra Silva dos Santos</p>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
