@@ -116,7 +116,7 @@ const allTemplates = {
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido {{issueDateTime}}</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
@@ -178,17 +178,16 @@ const allTemplates = {
             <h1 class="mainTitle">Atestado Médico</h1>
             <p class="mainText">
               Atesto, para os devidos fins, que o(a) paciente <strong>{{patientName}}</strong> portador(a) do CPF nº <strong>{{patientCPF}}</strong> necessita de <strong>{{durationInDays}} dia(s)</strong> de afastamento de suas atividades
-              a partir de <strong>12/07/2026</strong>, por motivos de saúde.
+              a partir de <strong>{{startDate}}</strong>, por motivos de saúde.
             </p>
             <div class="details">
-              <div class="detailItem"><span>Responsável legal</span><p>Priscila Alessandra Silva dos Santos</p></div>
               <div class="detailItem"><span>Finalidade</span><p>{{purpose}}</p></div>
               <div class="detailItem"><span>CID-10</span><p>{{cidCode}} - {{cidDescription}}</p></div>
             </div>
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 12/07/2026 às 09:12:06 (GMT-03)</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
@@ -251,15 +250,14 @@ const allTemplates = {
               <strong>{{patientCPF}}</strong>, encontra-se sob meus cuidados 
               profissionais, sendo-lhe necessário o afastamento de suas atividades 
               habituais por um período de <strong>{{durationInDays}} 
-              ({{durationInWords}})</strong> dia(s), a contar de <strong>10/07/2026</strong>.
+              ({{durationInWords}})</strong> dia(s), a contar de <strong>26/07/2026</strong>.
             </p>
-            <p class="detailItem"><strong>Responsável legal:</strong> Priscila Alessandra Silva dos Santos</p>
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
             <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 10/07/2026 às 14:21:34 (GMT-03)</p>
+              <p>Emitido em 16/07/2026 às 13:23:54</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
