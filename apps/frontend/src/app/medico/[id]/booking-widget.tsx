@@ -12,8 +12,7 @@ import {
   Loader2,
   XCircle
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatISO, formatDayMonthYear, formatWeekdayDayMonth } from '@/utils/date';
 import { api } from '@/services/api';
 import { CalendarStrip } from '@/components/consultation/CalendarStrip';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -46,7 +45,7 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
 
-  const formattedDateQuery = format(selectedDate, 'yyyy-MM-dd');
+  const formattedDateQuery = formatISO(selectedDate);
 
   // Fetch available slots from backend
   const { data: availableSlots = [], isLoading: isSlotsLoading } = useQuery({
@@ -74,9 +73,18 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
       setTimeout(() => setToast({ type: null, message: '' }), 3000);
     },
     onError: (error: any) => {
+      const errCode = error.response?.data?.code;
+      let errMsg = error.response?.data?.message;
+      
+      if (!errMsg && errCode === 'SLOT_UNAVAILABLE') {
+        errMsg = 'Este horário não está mais disponível. Por favor, escolha outro horário.';
+      } else if (!errMsg && errCode === 'VALIDATION_ERROR') {
+        errMsg = 'Dados inválidos fornecidos para o agendamento.';
+      }
+
       setToast({ 
         type: 'error', 
-        message: error.response?.data?.message || 'Erro ao agendar consulta. O horário pode não estar mais disponível.' 
+        message: errMsg || 'Erro ao agendar consulta. O horário pode não estar mais disponível.' 
       });
       setTimeout(() => setToast({ type: null, message: '' }), 4000);
     }
@@ -145,7 +153,7 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
           </div>
           <h3 className="text-md font-bold text-slate-900 dark:text-white">Consulta Pré-Agendada!</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-            Sua solicitação de consulta com <strong>{doctorName}</strong> para o dia <strong>{selectedDate?.toLocaleDateString('pt-BR')}</strong> às <strong>{selectedSlot}</strong> foi registrada.
+            Sua solicitação de consulta com <strong>{doctorName}</strong> para o dia <strong>{selectedDate && formatDayMonthYear(selectedDate)}</strong> às <strong>{selectedSlot}</strong> foi registrada.
           </p>
           <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-left border border-slate-200 dark:border-slate-700">
             <div className="flex gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -239,7 +247,7 @@ export function BookingWidget({ doctorId, doctorName, price, availabilities = []
                   Resumo do Agendamento
                 </p>
                 <p className="pl-4 mt-1 font-medium">
-                  {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  {formatWeekdayDayMonth(selectedDate)}
                 </p>
                 <p className="pl-4 font-bold">
                   Horário: {selectedSlot} ({availableSlots.find((s: any) => s.startTime === selectedSlot)?.slotDurationMinutes || 60} min)

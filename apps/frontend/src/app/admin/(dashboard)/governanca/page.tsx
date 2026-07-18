@@ -389,7 +389,7 @@ export default function AdminGovernancePage() {
                 </div>
               ) : (
                 pendingDoctors.map((doctor) => (
-                  <div key={doctor.id} className="rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 p-6 shadow-sm transition-all hover:shadow-md">
+                  <div key={doctor.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm transition-all hover:shadow-md">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2">
@@ -400,7 +400,7 @@ export default function AdminGovernancePage() {
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{doctor.user.email}</p>
                         
-                        <div className="mt-2.5 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500">
+                        <div className="mt-2.5 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                           {doctor.specialty && (
                             <span className="bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 px-2.5 py-1 rounded-lg">
                               {doctor.specialty}
@@ -594,7 +594,7 @@ export default function AdminGovernancePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">{selectedDoctor.name}</h3>
-                  <p className="text-xs font-bold text-teal-600 dark:text-teal-450 uppercase mt-0.5">
+                  <p className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase mt-0.5">
                     {selectedDoctor.specialty || 'Clínico Geral'}
                   </p>
                   <span className="inline-block mt-2 rounded bg-amber-500/10 text-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
@@ -655,7 +655,7 @@ export default function AdminGovernancePage() {
                       </p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-450">Identificador (User ID)</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Identificador (User ID)</span>
                       <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-0.5">#{selectedDoctor.user.id}</p>
                     </div>
                   </div>
@@ -688,7 +688,7 @@ export default function AdminGovernancePage() {
                     <MapPin className="h-4 w-4" />
                     Endereço de Atendimento
                   </h4>
-                  <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 text-center text-xs text-slate-450 dark:text-slate-400 py-6">
+                  <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 text-center text-xs text-slate-500 dark:text-slate-400 py-6">
                     Nenhum consultório presencial cadastrado. Atendimento exclusivo via Telemedicina.
                   </div>
                 </div>
@@ -768,7 +768,7 @@ export default function AdminGovernancePage() {
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white truncate flex items-center gap-1.5 group-hover:text-teal-600 dark:group-hover:text-teal-450 transition-colors">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white truncate flex items-center gap-1.5 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                     {getUserName(selectedUser)}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{selectedUser.email}</p>
@@ -781,7 +781,7 @@ export default function AdminGovernancePage() {
                     }`}>
                       {selectedUser.isActive ? 'Ativo' : 'Inativo'}
                     </span>
-                    <span className="text-[10px] text-teal-600 dark:text-teal-450 font-bold uppercase tracking-wider underline opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                    <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold uppercase tracking-wider underline opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
                       Editar
                     </span>
                   </div>
@@ -1013,7 +1013,7 @@ export default function AdminGovernancePage() {
                               type="text"
                               value={editForm.state}
                               onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-550 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                               placeholder="Ex: SP"
                             />
                           </div>

@@ -1,0 +1,986 @@
+diff --git a/apps/backend/prisma/schema.prisma b/apps/backend/prisma/schema.prisma
+index 088b21e..655c532 100644
+--- a/apps/backend/prisma/schema.prisma
++++ b/apps/backend/prisma/schema.prisma
+@@ -155,6 +155,13 @@ model CidCode {
+   @@index([code])
+ }
+ 
++enum SymptomDuration {
++  HOJE
++  ONTEM
++  ESTA_SEMANA
++  MAIS_DE_UMA_SEMANA
++}
++
+ model Appointment {
+   id               Int                @id @default(autoincrement())
+   doctorProfile    DoctorProfile      @relation(fields: [doctorProfileId], references: [id])
+@@ -166,8 +173,42 @@ model Appointment {
+   cancellationReason String?
+   createdAt        DateTime           @default(now())
+   updatedAt        DateTime           @updatedAt
++  preTriage        PreTriage?
++  consentRecord    ConsentRecord?
+ 
+   @@index([doctorProfileId])
+   @@index([patientProfileId])
+   @@unique([doctorProfileId, date])
+ }
++
++model PreTriage {
++  id            Int              @id @default(autoincrement())
++  symptoms      String           @db.VarChar(500)
++  duration      SymptomDuration
++  intensity     Int
++  createdAt     DateTime         @default(now())
++  updatedAt     DateTime         @updatedAt
++  appointment   Appointment      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
++  appointmentId Int              @unique
++}
++
++model ConsentRecord {
++  id            Int         @id @default(autoincrement())
++  accepted      Boolean
++  ipAddress     String?
++  userAgent     String?
++  termsVersion  String      @default("v1.0")
++  acceptedAt    DateTime    @default(now())
++  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
++  appointmentId Int         @unique
++}
++
++model LegalTerms {
++  id        Int      @id @default(autoincrement())
++  version   String   @unique
++  content   String   @db.Text
++  isActive  Boolean  @default(true)
++  createdAt DateTime @default(now())
++  updatedAt DateTime @updatedAt
++}
++
+diff --git a/apps/backend/prisma/seed.ts b/apps/backend/prisma/seed.ts
+index db04494..b3f15f1 100644
+--- a/apps/backend/prisma/seed.ts
++++ b/apps/backend/prisma/seed.ts
+@@ -9,7 +9,7 @@ async function main() {
+   console.log('Iniciando o processo de seeding completo...');
+ 
+   // Truncate tables with RESTART IDENTITY CASCADE
+-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "User", "DoctorProfile", "PatientProfile", "Address", "MedicalCertificate", "CidCode" RESTART IDENTITY CASCADE;`);
++  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "User", "DoctorProfile", "PatientProfile", "Address", "MedicalCertificate", "CidCode", "LegalTerms" RESTART IDENTITY CASCADE;`);
+   console.log('Tabelas limpas com sucesso.');
+ 
+   // CID10 Seeding (keep your existing CID10 seeding logic)
+@@ -99,6 +99,40 @@ async function main() {
+   });
+   console.log(`Admin de teste criado: ${adminUser.email}`);
+ 
++  // Create Initial Legal Terms (v1.0)
++  const initialTermsContent = `1. Escopo do Atendimento Remoto
++Este atendimento é realizado por meio de telemedicina, conforme regulamentação do Conselho Federal de Medicina (CFM). A consulta remota tem como objetivo oferecer orientação médica à distância, mas não substitui o atendimento presencial em situações de emergência ou que exijam exame físico.
++O profissional de saúde poderá, a seu critério clínico, recomendar um atendimento presencial caso julgue necessário para a adequada avaliação do seu quadro.
++
++2. Limitações da Telemedicina
++A teleconsulta possui limitações inerentes, incluindo a impossibilidade de realização de exame físico direto. Por isso:
++- Diagnósticos podem ser presuntivos e sujeitos a confirmação posterior.
++- A qualidade da conexão de internet pode impactar a comunicação.
++- Em caso de urgência ou emergência médica, procure atendimento presencial imediatamente.
++
++3. Consentimento de Uso de Dados Sensíveis
++Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD), informamos que os dados coletados durante esta consulta, incluindo dados pessoais sensíveis de saúde, serão tratados exclusivamente para:
++- Prestação do atendimento médico solicitado.
++- Registro em prontuário eletrônico conforme exigência legal.
++- Emissão de receitas, atestados e documentos clínicos.
++Seus dados não serão compartilhados com terceiros sem o seu consentimento expresso, exceto por obrigação legal ou regulatória.
++
++4. Direitos do Paciente sob a LGPD
++Você tem o direito de, a qualquer momento:
++- Solicitar acesso aos seus dados pessoais armazenados.
++- Solicitar a correção de dados incompletos ou incorretos.
++- Solicitar a anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos.
++- Revogar o consentimento para tratamento de dados, ciente de que isso poderá impactar a continuidade do atendimento.`;
++
++  await prisma.legalTerms.create({
++    data: {
++      version: 'v1.0',
++      content: initialTermsContent,
++      isActive: true,
++    },
++  });
++  console.log('Termo de consentimento inicial v1.0 criado.');
++
+   console.log('Seeding completo!');
+ }
+ 
+diff --git a/apps/backend/src/consent/consent-terms.controller.ts b/apps/backend/src/consent/consent-terms.controller.ts
+new file mode 100644
+index 0000000..ac3491e
+--- /dev/null
++++ b/apps/backend/src/consent/consent-terms.controller.ts
+@@ -0,0 +1,18 @@
++import { Controller, Get, NotFoundException, UseGuards } from '@nestjs/common';
++import { ConsentService } from './consent.service';
++import { AuthGuard } from '../auth/auth.guard';
++
++@Controller('consent')
++export class ConsentTermsController {
++  constructor(private readonly consentService: ConsentService) {}
++
++  @Get('active-terms')
++  @UseGuards(AuthGuard)
++  async getActiveTerms() {
++    const activeTerms = await this.consentService.getActiveTerms();
++    if (!activeTerms) {
++      throw new NotFoundException('Nenhum termo legal ativo encontrado.');
++    }
++    return activeTerms;
++  }
++}
+diff --git a/apps/backend/src/consent/consent.controller.spec.ts b/apps/backend/src/consent/consent.controller.spec.ts
+new file mode 100644
+index 0000000..d51057b
+--- /dev/null
++++ b/apps/backend/src/consent/consent.controller.spec.ts
+@@ -0,0 +1,169 @@
++import { Test, TestingModule } from '@nestjs/testing';
++import { ConsentController } from './consent.controller';
++import { ConsentTermsController } from './consent-terms.controller';
++import { ConsentService } from './consent.service';
++import { PrismaService } from '../prisma/prisma.service';
++import { JwtService } from '@nestjs/jwt';
++import { ConfigService } from '@nestjs/config';
++import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
++
++describe('Consent Integration', () => {
++  let consentController: ConsentController;
++  let consentTermsController: ConsentTermsController;
++  let consentService: ConsentService;
++
++  const mockPrismaService = {
++    consentRecord: {
++      create: jest.fn(),
++      findUnique: jest.fn(),
++    },
++    legalTerms: {
++      findFirst: jest.fn(),
++    },
++    appointment: {
++      findUnique: jest.fn(),
++    },
++  };
++
++  const mockJwtService = {
++    verify: jest.fn(),
++  };
++
++  const mockConfigService = {
++    get: jest.fn(),
++  };
++
++  beforeEach(async () => {
++    const module: TestingModule = await Test.createTestingModule({
++      controllers: [ConsentController, ConsentTermsController],
++      providers: [
++        ConsentService,
++        {
++          provide: PrismaService,
++          useValue: mockPrismaService,
++        },
++        {
++          provide: JwtService,
++          useValue: mockJwtService,
++        },
++        {
++          provide: ConfigService,
++          useValue: mockConfigService,
++        },
++      ],
++    }).compile();
++
++    consentController = module.get<ConsentController>(ConsentController);
++    consentTermsController = module.get<ConsentTermsController>(ConsentTermsController);
++    consentService = module.get<ConsentService>(ConsentService);
++  });
++
++  afterEach(() => {
++    jest.clearAllMocks();
++  });
++
++  describe('GET /consent/active-terms', () => {
++    it('should return the active terms if found', async () => {
++      const activeTerms = {
++        id: 1,
++        version: 'v1.0',
++        content: 'Termos Legais Ativos',
++        isActive: true,
++        createdAt: new Date(),
++        updatedAt: new Date(),
++      };
++      mockPrismaService.legalTerms.findFirst.mockResolvedValue(activeTerms);
++
++      const result = await consentTermsController.getActiveTerms();
++      expect(result).toEqual(activeTerms);
++    });
++
++    it('should throw NotFoundException if no active terms exist', async () => {
++      mockPrismaService.legalTerms.findFirst.mockResolvedValue(null);
++
++      await expect(consentTermsController.getActiveTerms()).rejects.toThrow(
++        NotFoundException,
++      );
++    });
++  });
++
++  describe('POST /appointments/:id/consent', () => {
++    const req = {
++      user: { id: 10, role: 'PATIENT' },
++      headers: {
++        'x-forwarded-for': '192.168.0.1',
++        'user-agent': 'Chrome/100',
++      },
++    };
++
++    const appointment = {
++      id: 1,
++      status: 'AGENDADA',
++      patientProfile: {
++        id: 5,
++        userId: 10,
++      },
++    };
++
++    const activeTerms = {
++      id: 1,
++      version: 'v1.0',
++      content: 'Termos Legais Ativos',
++      isActive: true,
++    };
++
++    it('should successfully submit consent when version matches active version', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointment);
++      mockPrismaService.consentRecord.findUnique.mockResolvedValue(null); // No existing consent
++      mockPrismaService.legalTerms.findFirst.mockResolvedValue(activeTerms);
++
++      const createdRecord = {
++        id: 100,
++        appointmentId: 1,
++        accepted: true,
++        termsVersion: 'v1.0',
++        ipAddress: '192.168.0.1',
++        userAgent: 'Chrome/100',
++        acceptedAt: new Date(),
++      };
++      mockPrismaService.consentRecord.create.mockResolvedValue(createdRecord);
++
++      const dto = {
++        accepted: true,
++        termsVersion: 'v1.0',
++      };
++
++      const result = await consentController.createConsent(req as any, 1, dto);
++      expect(result).toEqual(createdRecord);
++    });
++
++    it('should throw BadRequestException when submitted terms version does not match active version', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointment);
++      mockPrismaService.consentRecord.findUnique.mockResolvedValue(null);
++      mockPrismaService.legalTerms.findFirst.mockResolvedValue(activeTerms);
++
++      const dto = {
++        accepted: true,
++        termsVersion: 'v0.9-outdated',
++      };
++
++      await expect(
++        consentController.createConsent(req as any, 1, dto),
++      ).rejects.toThrow(BadRequestException);
++    });
++
++    it('should throw ConflictException if consent was already submitted', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointment);
++      mockPrismaService.consentRecord.findUnique.mockResolvedValue({ id: 100 }); // Existing consent
++
++      const dto = {
++        accepted: true,
++        termsVersion: 'v1.0',
++      };
++
++      await expect(
++        consentController.createConsent(req as any, 1, dto),
++      ).rejects.toThrow(ConflictException);
++    });
++  });
++});
+diff --git a/apps/backend/src/consent/consent.controller.ts b/apps/backend/src/consent/consent.controller.ts
+new file mode 100644
+index 0000000..454c10a
+--- /dev/null
++++ b/apps/backend/src/consent/consent.controller.ts
+@@ -0,0 +1,146 @@
++import {
++  Controller,
++  Post,
++  Body,
++  UseGuards,
++  Req,
++  Param,
++  ParseIntPipe,
++  ForbiddenException,
++  NotFoundException,
++  HttpCode,
++  HttpStatus,
++  Get,
++  BadRequestException,
++  ConflictException,
++} from '@nestjs/common';
++import { ConsentService } from './consent.service';
++import { CreateConsentDto } from './dto/create-consent.dto';
++import { AuthGuard } from '../auth/auth.guard';
++import { RolesGuard } from '../auth/roles.guard';
++import { Roles } from '../auth/roles.decorator';
++import { PrismaService } from '../prisma/prisma.service';
++
++@Controller('appointments')
++export class ConsentController {
++  constructor(
++    private readonly consentService: ConsentService,
++    private readonly prisma: PrismaService,
++  ) {}
++
++  @Post(':id/consent')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT')
++  @HttpCode(HttpStatus.CREATED)
++  async createConsent(
++    @Req() req: any,
++    @Param('id', ParseIntPipe) appointmentId: number,
++    @Body() dto: CreateConsentDto,
++  ) {
++    await this.validatePatientOwnership(req.user.id, appointmentId);
++
++    // Prevent duplicate consent records
++    const existing = await this.consentService.findByAppointmentId(appointmentId);
++    if (existing) {
++      throw new ConflictException('O consentimento já foi registrado para esta consulta.');
++    }
++
++    const activeTerms = await this.consentService.getActiveTerms();
++    if (!activeTerms) {
++      throw new BadRequestException('Nenhum termo de consentimento ativo cadastrado.');
++    }
++
++    if (dto.termsVersion !== activeTerms.version) {
++      throw new BadRequestException(
++        'Os termos de consentimento foram atualizados. Por favor, recarregue a página para aceitar a versão mais recente.',
++      );
++    }
++
++    const xForwardedFor = req.headers['x-forwarded-for'];
++    const ipHeader = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor;
++    const rawIp = ipHeader?.split(',')[0]?.trim() || req.ip || null;
++    const ipAddress = rawIp ? rawIp.slice(0, 45) : null;
++
++    const rawUserAgent = req.headers['user-agent'];
++    const userAgent = rawUserAgent
++      ? (Array.isArray(rawUserAgent) ? rawUserAgent[0] : rawUserAgent).slice(0, 500)
++      : null;
++
++    try {
++      return await this.consentService.create(
++        appointmentId,
++        dto.accepted,
++        dto.termsVersion,
++        ipAddress,
++        userAgent,
++      );
++    } catch (error: any) {
++      if (error.code === 'P2002') {
++        throw new ConflictException('O consentimento já foi registrado para esta consulta.');
++      }
++      throw error;
++    }
++  }
++
++  @Get(':id/consent')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT', 'DOCTOR')
++  async getConsent(
++    @Req() req: any,
++    @Param('id', ParseIntPipe) appointmentId: number,
++  ) {
++    const appointment = await this.prisma.appointment.findUnique({
++      where: { id: appointmentId },
++      include: {
++        doctorProfile: true,
++        patientProfile: true,
++      },
++    });
++
++    if (!appointment) {
++      throw new NotFoundException('Consulta não encontrada.');
++    }
++
++    const user = req.user;
++    const isPatientOwner =
++      appointment.patientProfile && appointment.patientProfile.userId === user.id;
++    const isDoctorOwner =
++      appointment.doctorProfile && appointment.doctorProfile.userId === user.id;
++
++    if (!isPatientOwner && !isDoctorOwner) {
++      throw new NotFoundException('Consulta não encontrada.');
++    }
++
++    return this.consentService.findByAppointmentId(appointmentId);
++  }
++
++  /**
++   * Validates that the authenticated user (patient) is the owner of the appointment.
++   * Prevents ID leaking by returning generic error for both not-found and unauthorized cases.
++   */
++  private async validatePatientOwnership(
++    userId: number,
++    appointmentId: number,
++  ) {
++    const appointment = await this.prisma.appointment.findUnique({
++      where: { id: appointmentId },
++      include: {
++        patientProfile: true,
++      },
++    });
++
++    if (!appointment || !appointment.patientProfile) {
++      throw new NotFoundException('Consulta não encontrada.');
++    }
++
++    if (appointment.patientProfile.userId !== userId) {
++      throw new NotFoundException('Consulta não encontrada.');
++    }
++
++    if (appointment.status !== 'AGENDADA') {
++      throw new BadRequestException(
++        'O consentimento só pode ser registrado para consultas agendadas.',
++      );
++    }
++  }
++}
+diff --git a/apps/backend/src/consent/consent.module.ts b/apps/backend/src/consent/consent.module.ts
+new file mode 100644
+index 0000000..5c6d677
+--- /dev/null
++++ b/apps/backend/src/consent/consent.module.ts
+@@ -0,0 +1,13 @@
++import { Module } from '@nestjs/common';
++import { ConsentService } from './consent.service';
++import { ConsentController } from './consent.controller';
++import { ConsentTermsController } from './consent-terms.controller';
++import { PrismaModule } from '../prisma/prisma.module';
++
++@Module({
++  imports: [PrismaModule],
++  controllers: [ConsentController, ConsentTermsController],
++  providers: [ConsentService],
++  exports: [ConsentService],
++})
++export class ConsentModule {}
+diff --git a/apps/backend/src/consent/consent.service.spec.ts b/apps/backend/src/consent/consent.service.spec.ts
+new file mode 100644
+index 0000000..b019fe6
+--- /dev/null
++++ b/apps/backend/src/consent/consent.service.spec.ts
+@@ -0,0 +1,183 @@
++import { Test, TestingModule } from '@nestjs/testing';
++import { ConsentService } from './consent.service';
++import { PrismaService } from '../prisma/prisma.service';
++
++describe('ConsentService', () => {
++  let service: ConsentService;
++
++  const mockPrismaService = {
++    consentRecord: {
++      create: jest.fn(),
++      findUnique: jest.fn(),
++    },
++    legalTerms: {
++      findFirst: jest.fn(),
++    },
++  };
++
++  beforeEach(async () => {
++    const module: TestingModule = await Test.createTestingModule({
++      providers: [
++        ConsentService,
++        {
++          provide: PrismaService,
++          useValue: mockPrismaService,
++        },
++      ],
++    }).compile();
++
++    service = module.get<ConsentService>(ConsentService);
++  });
++
++  afterEach(() => {
++    jest.clearAllMocks();
++  });
++
++  it('should be defined', () => {
++    expect(service).toBeDefined();
++  });
++
++  describe('create', () => {
++    const appointmentId = 1;
++    const accepted = true;
++    const termsVersion = 'v1.0';
++    const ipAddress = '192.168.1.1';
++    const userAgent = 'Mozilla/5.0';
++
++    it('should create a consent record with all audit data', async () => {
++      const expectedResult = {
++        id: 1,
++        appointmentId,
++        accepted,
++        termsVersion,
++        ipAddress,
++        userAgent,
++        acceptedAt: new Date(),
++      };
++
++      mockPrismaService.consentRecord.create.mockResolvedValue(expectedResult);
++
++      const result = await service.create(
++        appointmentId,
++        accepted,
++        termsVersion,
++        ipAddress,
++        userAgent,
++      );
++
++      expect(result).toEqual(expectedResult);
++      expect(mockPrismaService.consentRecord.create).toHaveBeenCalledWith({
++        data: {
++          appointmentId,
++          accepted,
++          termsVersion,
++          ipAddress,
++          userAgent,
++        },
++      });
++    });
++
++    it('should create a consent record with null IP and User-Agent', async () => {
++      const expectedResult = {
++        id: 2,
++        appointmentId,
++        accepted,
++        termsVersion,
++        ipAddress: null,
++        userAgent: null,
++        acceptedAt: new Date(),
++      };
++
++      mockPrismaService.consentRecord.create.mockResolvedValue(expectedResult);
++
++      const result = await service.create(
++        appointmentId,
++        accepted,
++        termsVersion,
++        null,
++        null,
++      );
++
++      expect(result).toEqual(expectedResult);
++      expect(mockPrismaService.consentRecord.create).toHaveBeenCalledWith({
++        data: {
++          appointmentId,
++          accepted,
++          termsVersion,
++          ipAddress: null,
++          userAgent: null,
++        },
++      });
++    });
++
++    it('should propagate database errors', async () => {
++      mockPrismaService.consentRecord.create.mockRejectedValue(
++        new Error('Unique constraint violation'),
++      );
++
++      await expect(
++        service.create(appointmentId, accepted, termsVersion, ipAddress, userAgent),
++      ).rejects.toThrow('Unique constraint violation');
++    });
++  });
++
++  describe('findByAppointmentId', () => {
++    it('should return the consent record for an appointment', async () => {
++      const appointmentId = 1;
++      const expectedResult = {
++        id: 1,
++        appointmentId,
++        accepted: true,
++        termsVersion: 'v1.0',
++        ipAddress: '10.0.0.1',
++        userAgent: 'TestAgent/1.0',
++        acceptedAt: new Date(),
++      };
++
++      mockPrismaService.consentRecord.findUnique.mockResolvedValue(expectedResult);
++
++      const result = await service.findByAppointmentId(appointmentId);
++
++      expect(result).toEqual(expectedResult);
++      expect(mockPrismaService.consentRecord.findUnique).toHaveBeenCalledWith({
++        where: { appointmentId },
++      });
++    });
++
++    it('should return null if no consent exists for the appointment', async () => {
++      const appointmentId = 999;
++
++      mockPrismaService.consentRecord.findUnique.mockResolvedValue(null);
++
++      const result = await service.findByAppointmentId(appointmentId);
++
++      expect(result).toBeNull();
++      expect(mockPrismaService.consentRecord.findUnique).toHaveBeenCalledWith({
++        where: { appointmentId: 999 },
++      });
++    });
++  });
++
++  describe('getActiveTerms', () => {
++    it('should return the active legal terms', async () => {
++      const expectedTerms = {
++        id: 1,
++        version: 'v1.0',
++        content: 'Conteúdo Legal de Teste',
++        isActive: true,
++        createdAt: new Date(),
++        updatedAt: new Date(),
++      };
++
++      mockPrismaService.legalTerms.findFirst.mockResolvedValue(expectedTerms);
++
++      const result = await service.getActiveTerms();
++
++      expect(result).toEqual(expectedTerms);
++      expect(mockPrismaService.legalTerms.findFirst).toHaveBeenCalledWith({
++        where: { isActive: true },
++        orderBy: { createdAt: 'desc' },
++      });
++    });
++  });
++});
+diff --git a/apps/backend/src/consent/consent.service.ts b/apps/backend/src/consent/consent.service.ts
+new file mode 100644
+index 0000000..1c6509e
+--- /dev/null
++++ b/apps/backend/src/consent/consent.service.ts
+@@ -0,0 +1,45 @@
++import { Injectable, Logger } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++
++@Injectable()
++export class ConsentService {
++  private readonly logger = new Logger(ConsentService.name);
++
++  constructor(private prisma: PrismaService) {}
++
++  async create(
++    appointmentId: number,
++    accepted: boolean,
++    termsVersion: string,
++    ipAddress: string | null,
++    userAgent: string | null,
++  ) {
++    const consentRecord = await this.prisma.consentRecord.create({
++      data: {
++        appointmentId,
++        accepted,
++        termsVersion,
++        ipAddress,
++        userAgent,
++      },
++    });
++
++    this.logger.log(
++      `CONSENT recorded for appointment ${appointmentId} with version ${termsVersion}`,
++    );
++    return consentRecord;
++  }
++
++  async findByAppointmentId(appointmentId: number) {
++    return this.prisma.consentRecord.findUnique({
++      where: { appointmentId },
++    });
++  }
++
++  async getActiveTerms() {
++    return this.prisma.legalTerms.findFirst({
++      where: { isActive: true },
++      orderBy: { createdAt: 'desc' },
++    });
++  }
++}
+diff --git a/apps/backend/src/consent/dto/create-consent.dto.ts b/apps/backend/src/consent/dto/create-consent.dto.ts
+new file mode 100644
+index 0000000..ea7cc0b
+--- /dev/null
++++ b/apps/backend/src/consent/dto/create-consent.dto.ts
+@@ -0,0 +1,11 @@
++import { IsBoolean, Equals, IsString, IsNotEmpty } from 'class-validator';
++
++export class CreateConsentDto {
++  @IsBoolean({ message: 'O campo de aceitação é obrigatório.' })
++  @Equals(true, { message: 'Você deve aceitar os termos para prosseguir.' })
++  accepted: boolean;
++
++  @IsString({ message: 'A versão do termo deve ser uma string.' })
++  @IsNotEmpty({ message: 'A versão do termo é obrigatória.' })
++  termsVersion: string;
++}
+diff --git a/apps/frontend/src/components/consultation/ConsentForm.tsx b/apps/frontend/src/components/consultation/ConsentForm.tsx
+new file mode 100644
+index 0000000..a024b2e
+--- /dev/null
++++ b/apps/frontend/src/components/consultation/ConsentForm.tsx
+@@ -0,0 +1,238 @@
++'use client';
++
++import { useState, useEffect } from 'react';
++import { api } from '@/services/api';
++import {
++  AlertTriangle,
++  Check,
++  FileText,
++  Loader2,
++  Shield,
++} from 'lucide-react';
++
++interface ConsentFormProps {
++  appointmentId: number;
++  onComplete: () => void;
++  onBack?: () => void;
++}
++
++export function ConsentForm({
++  appointmentId,
++  onComplete,
++  onBack,
++}: ConsentFormProps) {
++  const [accepted, setAccepted] = useState(false);
++  const [isSubmitting, setIsSubmitting] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++
++  // States for dynamic terms fetching
++  const [terms, setTerms] = useState<{ version: string; content: string } | null>(null);
++  const [isLoadingTerms, setIsLoadingTerms] = useState(true);
++  const [fetchError, setFetchError] = useState<string | null>(null);
++
++  const fetchActiveTerms = async () => {
++    setIsLoadingTerms(true);
++    setFetchError(null);
++    try {
++      const response = await api.get('/consent/active-terms');
++      setTerms(response.data);
++    } catch (err: any) {
++      setFetchError(
++        'Não foi possível carregar os termos de consentimento mais recentes. Verifique sua conexão e tente novamente.',
++      );
++    } finally {
++      setIsLoadingTerms(false);
++    }
++  };
++
++  useEffect(() => {
++    fetchActiveTerms();
++  }, []);
++
++  const handleSubmit = async () => {
++    if (!accepted || !terms) return;
++
++    setIsSubmitting(true);
++    setError(null);
++
++    try {
++      await api.post(`/appointments/${appointmentId}/consent`, {
++        accepted: true,
++        termsVersion: terms.version,
++      });
++      onComplete();
++    } catch (err: any) {
++      const message =
++        err.response?.data?.message ||
++        'Erro ao registrar o consentimento. Tente novamente.';
++      setError(Array.isArray(message) ? message[0] : message);
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
++  const handleKeyDown = (e: React.KeyboardEvent) => {
++    const isCheckbox = (e.target as HTMLElement)?.id === 'consent-checkbox';
++    if (e.key === 'Enter' && accepted && !isSubmitting && !isCheckbox) {
++      e.preventDefault();
++      handleSubmit();
++    }
++  };
++
++  return (
++    <div className="max-w-2xl mx-auto" onKeyDown={handleKeyDown}>
++      {/* Card Container */}
++      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
++        {/* Header */}
++        <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-700/50">
++          <div className="flex items-center gap-3">
++            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center">
++              <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400" />
++            </div>
++            <div>
++              <h2 className="text-lg font-bold text-slate-800 dark:text-white">
++                Termo de Consentimento
++              </h2>
++              <p className="text-xs text-slate-500 dark:text-slate-400">
++                Telemedicina &amp; Política de Privacidade (LGPD)
++              </p>
++            </div>
++          </div>
++        </div>
++
++        {/* Loading State */}
++        {isLoadingTerms && (
++          <div className="p-12 flex flex-col items-center justify-center gap-3">
++            <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
++            <p className="text-sm text-slate-500 dark:text-slate-400">
++              Carregando os termos de consentimento mais recentes...
++            </p>
++          </div>
++        )}
++
++        {/* Error State */}
++        {fetchError && (
++          <div className="p-8 flex flex-col items-center justify-center gap-4 text-center">
++            <AlertTriangle className="w-10 h-10 text-rose-500" />
++            <div className="space-y-1">
++              <p className="text-base font-semibold text-slate-800 dark:text-white">
++                Falha ao carregar termos legais
++              </p>
++              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
++                {fetchError}
++              </p>
++            </div>
++            <button
++              type="button"
++              onClick={fetchActiveTerms}
++              className="px-4 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-teal-500"
++            >
++              Tentar Novamente
++            </button>
++          </div>
++        )}
++
++        {/* Loaded State */}
++        {terms && (
++          <>
++            {/* Terms Content */}
++            <div className="p-6">
++              <div
++                className="max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-lg"
++                tabIndex={0}
++                aria-label="Conteúdo dos Termos de Consentimento e Privacidade"
++              >
++                <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
++                  {terms.content}
++                </div>
++              </div>
++              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
++                <span className="text-xs text-slate-400 dark:text-slate-500">
++                  Versão ativa dos termos: {terms.version}
++                </span>
++              </div>
++            </div>
++
++            {/* Acceptance Checkbox */}
++            <div className="mx-6 mb-4">
++              <label
++                htmlFor="consent-checkbox"
++                className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all outline-none ${
++                  accepted
++                    ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20'
++                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
++                }`}
++              >
++                <div className="pt-0.5">
++                  <input
++                    type="checkbox"
++                    id="consent-checkbox"
++                    checked={accepted}
++                    onChange={(e) => setAccepted(e.target.checked)}
++                    className="sr-only peer"
++                  />
++                  <div
++                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all peer-focus:ring-2 peer-focus:ring-teal-500 peer-focus:ring-offset-2 dark:peer-focus:ring-offset-slate-800 ${
++                      accepted
++                        ? 'border-teal-500 bg-teal-500'
++                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
++                    }`}
++                  >
++                    {accepted && <Check className="w-4 h-4 text-white" />}
++                  </div>
++                </div>
++                <span className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
++                  Li, compreendi e aceito os Termos de Consentimento Digital e a
++                  Política de Privacidade/LGPD para esta consulta.
++                </span>
++              </label>
++            </div>
++
++            {/* Error feedback */}
++            {error && (
++              <div className="mx-6 mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-sm text-rose-700 dark:text-rose-400 font-medium">
++                {error}
++              </div>
++            )}
++
++            {/* Navigation */}
++            <div className="px-6 pb-6 flex items-center justify-between">
++              {onBack && (
++                <button
++                  type="button"
++                  id="consent-back"
++                  onClick={onBack}
++                  className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 outline-none focus:ring-2 focus:ring-teal-500"
++                >
++                  Voltar
++                </button>
++              )}
++              <div className={onBack ? '' : 'ml-auto'}>
++                <button
++                  type="button"
++                  id="consent-submit"
++                  onClick={handleSubmit}
++                  disabled={!accepted || isSubmitting}
++                  className="px-6 py-2.5 text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
++                >
++                  {isSubmitting ? (
++                    <>
++                      <Loader2 className="w-4 h-4 animate-spin" />
++                      Registrando...
++                    </>
++                  ) : (
++                    <>
++                      <Shield className="w-4 h-4" />
++                      Confirmar e Prosseguir
++                    </>
++                  )}
++                </button>
++              </div>
++            </div>
++          </>
++        )}
++      </div>
++    </div>
++  );
++}
++

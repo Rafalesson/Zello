@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { CalendarDays, Calendar, User, Clock, CheckCircle2, Activity } from 'lucide-react';
+import { formatDateTime, formatISO } from '@/utils/date';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
@@ -15,7 +16,7 @@ type PatientProfile = {
 type AppointmentApi = {
   id: number;
   date: string;
-  status: 'AGENDADA' | 'CANCELADA' | 'REALIZADA';
+  status: 'AGENDADA' | 'CANCELADA' | 'REALIZADA' | 'EM_ESPERA' | 'EM_ANDAMENTO' | 'NAO_REALIZADA';
   patientProfile: {
     id: number;
     name: string;
@@ -28,6 +29,9 @@ const statusBadgeStyles: Record<string, string> = {
   REALIZADA: 'bg-green-50 text-green-700 border-green-250 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30',
   NAO_INICIADA: 'bg-gray-50 text-gray-700 border-gray-250 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
   REAGENDADA: 'bg-blue-50 text-blue-700 border-blue-250 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
+  EM_ESPERA: 'bg-teal-50 text-teal-700 border-teal-250 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900/30',
+  EM_ANDAMENTO: 'bg-indigo-50 text-indigo-700 border-indigo-250 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30',
+  NAO_REALIZADA: 'bg-rose-50 text-rose-700 border-rose-250 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30',
 };
 
 const isAppointmentMissed = (dateString: string) => {
@@ -37,8 +41,12 @@ const isAppointmentMissed = (dateString: string) => {
   return now > windowEnd;
 };
 
-const isAppointmentStartable = (dateString: string) => {
-  const appTime = new Date(dateString).getTime();
+const isAppointmentStartable = (appointment: AppointmentApi) => {
+  if (appointment.status === 'EM_ESPERA') return true;
+  if (appointment.status === 'EM_ANDAMENTO') return false;
+  if (appointment.status === 'CANCELADA' || appointment.status === 'REALIZADA' || appointment.status === 'NAO_REALIZADA') return false;
+
+  const appTime = new Date(appointment.date).getTime();
   const now = new Date().getTime();
   const windowStart = appTime - 15 * 60 * 1000; // 15 minutos antes
   const windowEnd = appTime + 15 * 60 * 1000; // 15 minutos depois
@@ -54,24 +62,16 @@ const getDisplayStatus = (appointment: AppointmentApi) => {
 
 const formatStatusText = (status: string) => {
   if (status === 'NAO_INICIADA') return 'NÃO INICIADA';
+  if (status === 'EM_ESPERA') return 'EM ESPERA';
+  if (status === 'EM_ANDAMENTO') return 'EM ANDAMENTO';
+  if (status === 'NAO_REALIZADA') return 'NÃO REALIZADA';
   return status;
 };
 
 const formatAppointmentDate = (dateString: string) => {
   try {
     const date = new Date(dateString);
-    const datePart = date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'America/Sao_Paulo',
-    });
-    const timePart = date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    });
-    return `${datePart} às ${timePart}`;
+    return formatDateTime(dateString);
   } catch (e) {
     return dateString;
   }
@@ -122,8 +122,8 @@ const AppointmentsEmptyState = () => (
     <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-full mb-3">
       <CalendarDays className="w-8 h-8 text-slate-400 dark:text-slate-500" />
     </div>
-    <h3 className="text-md font-bold text-slate-805 dark:text-slate-200 mb-1">Nenhuma consulta hoje</h3>
-    <p className="text-sm text-slate-500 dark:text-slate-450 max-w-xs">Você está sem compromissos clínicos agendados para a data de hoje.</p>
+    <h3 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-1">Nenhuma consulta hoje</h3>
+    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">Você está sem compromissos clínicos agendados para a data de hoje.</p>
   </div>
 );
 
@@ -141,10 +141,38 @@ export default function DashboardPage() {
     data: appointments,
     isLoading: isLoadingAppointments,
     isError: isAppointmentsError,
+    refetch,
   } = useQuery({
     queryKey: ['doctorAppointments'],
     queryFn: fetchDoctorAppointments,
   });
+
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleStartConsultation = async (appointmentId: number) => {
+    setIsStarting(true);
+    try {
+      await api.patch(`/appointments/${appointmentId}/start`);
+      await refetch();
+      // If we are in the details modal, update the selectedAppointment state
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment(prev => prev ? { ...prev, status: 'EM_ANDAMENTO' } : null);
+      }
+      alert('Atendimento iniciado com sucesso! O paciente foi redirecionado para a sala de consulta.');
+    } catch (error: any) {
+      console.error(error);
+      const errCode = error.response?.data?.code;
+      let errMsg = error.response?.data?.message;
+      
+      if (!errMsg && errCode === 'INVALID_TRANSITION') {
+        errMsg = 'Não é possível iniciar esta consulta no momento.';
+      }
+
+      alert(errMsg || 'Erro ao iniciar consulta.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -154,12 +182,12 @@ export default function DashboardPage() {
   }, []);
 
   const formattedDate = useMemo(() => {
-    const todayFormatted = new Date().toLocaleDateString('pt-BR', {
+    const todayFormatted = new Intl.DateTimeFormat('pt-BR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    });
+    }).format(new Date());
     return todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1);
   }, []);
 
@@ -167,22 +195,16 @@ export default function DashboardPage() {
     const stats = { total: 0, agendadas: 0, realizadas: 0, naoIniciadas: 0, canceladas: 0 };
     if (!appointments) return stats;
 
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'America/Sao_Paulo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const todayStr = formatter.format(new Date());
+    const todayStr = formatISO(new Date());
 
     appointments.forEach((app) => {
       try {
         const appDate = new Date(app.date);
-        const appStr = formatter.format(appDate);
+        const appStr = formatISO(appDate);
         if (appStr === todayStr) {
           stats.total++;
           const status = getDisplayStatus(app);
-          if (status === 'AGENDADA') stats.agendadas++;
+          if (status === 'AGENDADA' || status === 'EM_ESPERA' || status === 'EM_ANDAMENTO') stats.agendadas++;
           else if (status === 'REALIZADA') stats.realizadas++;
           else if (status === 'NAO_INICIADA') stats.naoIniciadas++;
           else if (status === 'CANCELADA') stats.canceladas++;
@@ -200,23 +222,17 @@ export default function DashboardPage() {
     return appointments
       .slice()
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .find(app => app.status === 'AGENDADA' && !isAppointmentMissed(app.date)) || null;
+      .find(app => app.status === 'EM_ANDAMENTO' || app.status === 'EM_ESPERA' || (app.status === 'AGENDADA' && !isAppointmentMissed(app.date))) || null;
   }, [appointments]);
 
   const todayAppointments = useMemo(() => {
     if (!appointments) return [];
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'America/Sao_Paulo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const todayStr = formatter.format(new Date());
+    const todayStr = formatISO(new Date());
 
     return appointments
       .filter(app => {
         try {
-          return formatter.format(new Date(app.date)) === todayStr;
+          return formatISO(new Date(app.date)) === todayStr;
         } catch (e) {
           return false;
         }
@@ -275,18 +291,28 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-black tracking-tight leading-none">{nextAppointment.patientProfile?.name || 'Paciente'}</h2>
-                    <span className="text-xs text-teal-200/80 mt-1 block">Teleconsulta Agendada</span>
+                    <span className="text-xs text-teal-200/80 mt-1 block">
+                      {nextAppointment.status === 'EM_ESPERA' ? '🟢 Paciente na Sala de Espera' : nextAppointment.status === 'EM_ANDAMENTO' ? '🔵 Em Atendimento' : 'Teleconsulta Agendada'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 flex gap-3">
-                {isAppointmentStartable(nextAppointment.date) ? (
+                {nextAppointment.status === 'EM_ANDAMENTO' ? (
                   <button
-                    onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
-                    className="flex-1 py-3 bg-white text-teal-800 font-bold rounded-xl shadow-md hover:bg-teal-50 active:scale-[0.98] transition-all text-sm"
+                    onClick={() => alert('Entrando na chamada de vídeo...')}
+                    className="flex-1 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-md hover:bg-indigo-600 active:scale-[0.98] transition-all text-sm"
                   >
-                    Iniciar Atendimento
+                    Entrar na Chamada
+                  </button>
+                ) : isAppointmentStartable(nextAppointment) ? (
+                  <button
+                    onClick={() => handleStartConsultation(nextAppointment.id)}
+                    disabled={isStarting}
+                    className="flex-1 py-3 bg-white text-teal-800 font-bold rounded-xl shadow-md hover:bg-teal-50 active:scale-[0.98] transition-all text-sm disabled:opacity-50"
+                  >
+                    {isStarting ? 'Iniciando...' : 'Iniciar Atendimento'}
                   </button>
                 ) : (
                   <button
@@ -383,17 +409,19 @@ export default function DashboardPage() {
                 <div className="relative border-l border-slate-100 dark:border-slate-700 pl-4 ml-3 space-y-4 my-2 flex-grow">
                   {todayAppointments.map((appointment) => {
                     const status = getDisplayStatus(appointment);
-                    const appTime = new Date(appointment.date).toLocaleTimeString('pt-BR', {
+                    const appTime = new Intl.DateTimeFormat('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit',
-                      timeZone: 'America/Sao_Paulo',
-                    });
+                    }).format(new Date(appointment.date));
                     
                     const statusColors: Record<string, string> = {
                       AGENDADA: 'bg-amber-500',
                       REALIZADA: 'bg-emerald-500',
                       NAO_INICIADA: 'bg-slate-400',
                       CANCELADA: 'bg-rose-500',
+                      EM_ESPERA: 'bg-teal-500',
+                      EM_ANDAMENTO: 'bg-indigo-500',
+                      NAO_REALIZADA: 'bg-rose-600',
                     };
                     const color = statusColors[status] || 'bg-teal-500';
 
@@ -524,7 +552,7 @@ export default function DashboardPage() {
               {getDisplayStatus(selectedAppointment) === 'AGENDADA' ? (
                 <button
                   onClick={() => alert('Fluxo de cancelamento de consulta ainda não implementado no Backend.')}
-                  className="px-4 py-2 bg-red-50 text-red-650 dark:bg-red-950/20 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+                  className="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
                 >
                   Cancelar Consulta
                 </button>
@@ -534,17 +562,27 @@ export default function DashboardPage() {
 
               <button
                 onClick={() => alert('O fluxo de reagendamento (com justificativa e notificação ao paciente) requer implementação de Backend. Recomendamos abrir uma nova Story!')}
-                className="px-4 py-2 bg-amber-50 text-amber-605 dark:bg-amber-950/20 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+                className="px-4 py-2 bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
               >
                 Reagendar
               </button>
 
-              {selectedAppointment.status === 'AGENDADA' && isAppointmentStartable(selectedAppointment.date) && (
+              {selectedAppointment.status === 'EM_ANDAMENTO' && (
                 <button
-                  onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
-                  className="px-4 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
+                  onClick={() => alert('Entrando na chamada de vídeo...')}
+                  className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-650 rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none"
                 >
-                  Iniciar Consulta
+                  Entrar na Chamada
+                </button>
+              )}
+
+              {(selectedAppointment.status === 'AGENDADA' || selectedAppointment.status === 'EM_ESPERA') && isAppointmentStartable(selectedAppointment) && (
+                <button
+                  onClick={() => handleStartConsultation(selectedAppointment.id)}
+                  disabled={isStarting}
+                  className="px-4 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap focus:outline-none disabled:opacity-50"
+                >
+                  {isStarting ? 'Iniciando...' : 'Iniciar Consulta'}
                 </button>
               )}
             </div>

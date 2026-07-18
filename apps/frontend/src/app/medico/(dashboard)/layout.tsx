@@ -75,17 +75,17 @@ export default function DoctorDashboardLayout({
         </header>
 
         {/* Card */}
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg dark:border-slate-750 dark:bg-slate-800 text-center my-8">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg dark:border-slate-700 dark:bg-slate-800 text-center my-8">
           {doctorStatus === 'PENDING' ? (
             <>
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-450 mb-6">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 mb-6">
                 <Clock className="h-8 w-8 animate-pulse" />
               </div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white">Cadastro em Análise</h1>
               <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 Olá, <span className="font-bold text-slate-700 dark:text-slate-200">{user.doctorProfile?.name}</span>! Sua conta está em fase de avaliação pelo administrador da plataforma.
               </p>
-              <p className="mt-2.5 text-xs text-slate-450 dark:text-slate-500 leading-relaxed">
+              <p className="mt-2.5 text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
                 Estamos verificando suas credenciais e CRM. Em breve seu acesso ao painel de telemedicina será liberado.
               </p>
             </>
@@ -98,7 +98,7 @@ export default function DoctorDashboardLayout({
               <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 Olá, <span className="font-bold text-slate-700 dark:text-slate-200">{user.doctorProfile?.name}</span>. Infelizmente sua solicitação de cadastro não pôde ser aprovada.
               </p>
-              <p className="mt-2.5 text-xs text-slate-450 dark:text-slate-500 leading-relaxed">
+              <p className="mt-2.5 text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
                 Por favor, entre em contato com o suporte da Zello para mais detalhes sobre a recusa do seu CRM.
               </p>
             </>

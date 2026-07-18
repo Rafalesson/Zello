@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/services/api';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatTime, formatFullDate, formatDateTime, formatISO } from '@/utils/date';
 import { Modal } from '@/components/common/Modal';
-import { CalendarX, CheckCircle, Clock, Info, CalendarDays, User, Video, SearchX, AlertTriangle, Loader2, ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react';
+import { CalendarX, CheckCircle, Clock, Info, CalendarDays, User, Video, SearchX, AlertTriangle, Loader2, ChevronLeft, ChevronRight, CalendarClock, Plus } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 interface DoctorProfile {
   id: number;
   name: string;
   specialty: string;
+  profilePictureUrl?: string;
 }
 
 interface Appointment {
@@ -86,7 +87,7 @@ export default function PatientAppointments() {
     if (!appointmentToReschedule) return;
     try {
       setIsLoadingSlots(true);
-      const dateStr = format(rescheduleDate, 'yyyy-MM-dd');
+      const dateStr = formatISO(rescheduleDate);
       const response = await api.get(`/appointments/availability/${appointmentToReschedule.doctorProfile.id}?date=${dateStr}`);
       setAvailableSlots(response.data);
       setSelectedSlot(null);
@@ -163,9 +164,20 @@ export default function PatientAppointments() {
       fetchAppointments();
     } catch (error: any) {
       console.error('Failed to reschedule appointment', error);
+      const errCode = error.response?.data?.code;
+      let errMsg = error.response?.data?.message;
+      
+      if (!errMsg && errCode === 'SLOT_UNAVAILABLE') {
+        errMsg = 'Este horário não está mais disponível. Por favor, escolha outro horário.';
+      } else if (!errMsg && errCode === 'INVALID_TRANSITION') {
+        errMsg = 'Não é possível remarcar esta consulta no momento.';
+      } else if (!errMsg && errCode === 'VALIDATION_ERROR') {
+        errMsg = 'Dados inválidos fornecidos para o reagendamento.';
+      }
+
       setFeedback({
         type: 'error',
-        message: error.response?.data?.message || 'Erro ao reagendar consulta.'
+        message: errMsg || 'Erro ao reagendar consulta.'
       });
     } finally {
       setIsRescheduling(false);
@@ -224,26 +236,53 @@ export default function PatientAppointments() {
 
   return (
     <div className="max-w-5xl mx-auto mt-6 px-4 pb-12">
-      <div className="mb-8 sm:flex sm:justify-between sm:items-end">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-            <CalendarDays className="w-8 h-8 text-teal-500" />
-            Minhas Consultas
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">
-            Acompanhe seus próximos agendamentos e seu histórico médico.
-          </p>
+      {/* Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 shadow-sm border border-teal-100/50 dark:border-teal-800/30">
+            <CalendarDays className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Minhas Consultas
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              Acompanhe seus próximos agendamentos e seu histórico médico.
+            </p>
+          </div>
         </div>
-        <div className="mt-4 sm:mt-0 flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
+        
+        <div className="shrink-0">
+          <Link 
+            href="/medicos" 
+            className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 active:scale-[0.98] text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-all shadow-md shadow-teal-600/10"
+          >
+            <Plus className="w-4 h-4" />
+            Agendar Consulta
+          </Link>
+        </div>
+      </div>
+
+      {/* Tabs Filter */}
+      <div className="mb-8 flex justify-start">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
           <button
             onClick={() => setActiveTab('upcoming')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'upcoming' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'upcoming' 
+                ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
           >
             Próximas
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'history' 
+                ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
           >
             Histórico
           </button>
@@ -263,23 +302,21 @@ export default function PatientAppointments() {
           <p className="text-slate-500 dark:text-slate-400 font-medium">Buscando suas consultas...</p>
         </div>
       ) : displayedAppointments.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 p-12 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center">
-          <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
-            <SearchX className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-10 md:p-16 shadow-lg shadow-slate-100/50 dark:shadow-none text-center flex flex-col items-center w-full mt-6 transition-all duration-300 hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 rounded-full bg-teal-500/10 dark:bg-teal-500/5 blur-xl scale-150 animate-pulse" />
+            <div className="w-20 h-20 bg-teal-50 dark:bg-slate-900/55 border border-teal-100 dark:border-teal-800/30 rounded-full flex items-center justify-center relative shadow-inner">
+              <CalendarClock className="w-10 h-10 text-teal-600 dark:text-teal-400" />
+            </div>
           </div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-            Nenhuma consulta {activeTab === 'upcoming' ? 'agendada' : 'no histórico'}
+          <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight mb-3">
+            {activeTab === 'upcoming' ? 'Nenhuma consulta agendada' : 'Histórico vazio'}
           </h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-8">
+          <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md leading-relaxed">
             {activeTab === 'upcoming'
-              ? 'Você não possui nenhum agendamento futuro. Que tal marcar uma nova consulta agora mesmo?'
+              ? 'Você não possui nenhum agendamento futuro. Que tal marcar uma nova consulta no botão "Agendar Consulta" acima?'
               : 'Você ainda não realizou ou cancelou nenhuma consulta conosco.'}
           </p>
-          {activeTab === 'upcoming' && (
-            <Link href="/medicos" className="bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-8 rounded-xl transition-colors shadow-sm">
-              Agendar Nova Consulta
-            </Link>
-          )}
         </div>
       ) : (
         <div className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
@@ -304,75 +341,98 @@ export default function PatientAppointments() {
               const isRoomTooEarly = isUpcomingState && timeDiff > fifteenMinsInMs;
 
               return (
-                <div key={appointment.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-5 relative overflow-hidden">
+                <div 
+                  key={appointment.id} 
+                  className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 flex flex-col md:flex-row gap-6 relative overflow-hidden items-center"
+                >
                   {/* Status Strip */}
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${appointment.status === 'AGENDADA' ? 'bg-blue-500' : appointment.status === 'REALIZADA' ? 'bg-emerald-500' : appointment.status === 'CANCELADA' ? 'bg-rose-500' : appointment.status === 'REAGENDADA' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors ${
+                    appointment.status === 'AGENDADA' ? 'bg-blue-500 dark:bg-blue-400' : 
+                    appointment.status === 'REALIZADA' ? 'bg-emerald-500 dark:bg-emerald-400' : 
+                    appointment.status === 'CANCELADA' ? 'bg-rose-500 dark:bg-rose-400' : 
+                    appointment.status === 'REAGENDADA' ? 'bg-amber-500 dark:bg-amber-400' : 
+                    'bg-slate-300'
+                  }`} />
 
-                  <div className="flex-1 pl-2 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-600">
-                      <User className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                  <div className="flex-1 pl-2 flex flex-col sm:flex-row items-center gap-5 w-full">
+                    {/* Doctor Avatar */}
+                    <div className="relative shrink-0 w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
+                      {appointment.doctorProfile.profilePictureUrl ? (
+                        <Image 
+                          src={appointment.doctorProfile.profilePictureUrl} 
+                          alt={appointment.doctorProfile.name} 
+                          fill 
+                          className="object-cover" 
+                        />
+                      ) : (
+                        <User className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                      )}
                     </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-3 mb-1.5">
-                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <CalendarDays className="w-4 h-4" />
-                          {format(appointmentDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                    
+                    <div className="text-center sm:text-left flex-1">
+                      <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mb-2">
+                        <span className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg px-2.5 py-1 text-slate-600 dark:text-slate-400 flex items-center gap-1.5 text-xs font-semibold shadow-sm">
+                          <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+                          {formatFullDate(appointmentDate)}
                         </span>
-                        <span className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-1.5">
-                          <Clock className="w-4 h-4 text-teal-500" />
-                          {format(appointmentDate, "HH:mm")}
+                        <span className="bg-teal-50 dark:bg-teal-950/20 border border-teal-100/50 dark:border-teal-900/30 rounded-lg px-2.5 py-1 text-teal-700 dark:text-teal-400 flex items-center gap-1.5 text-xs font-black shadow-sm">
+                          <Clock className="w-3.5 h-3.5 text-teal-500" />
+                          {formatTime(appointmentDate)}
                         </span>
                       </div>
-                      <h3 className="text-lg font-bold text-slate-800 dark:text-white">Dr(a). {appointment.doctorProfile.name}</h3>
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{appointment.doctorProfile.specialty}</p>
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">
+                        Dr(a). {appointment.doctorProfile.name}
+                      </h3>
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-0.5">
+                        {appointment.doctorProfile.specialty}
+                      </p>
                     </div>
                   </div>
 
-                  <div className={`flex flex-col sm:items-end gap-2 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-700/50 ${activeTab === 'upcoming' ? 'justify-between' : 'justify-center'}`}>
-                    <div className="w-full flex justify-start sm:justify-end">
+                  <div className={`flex flex-col sm:flex-row md:flex-col md:items-end gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-700/50 w-full md:w-auto shrink-0 justify-between items-center`}>
+                    <div className="w-full flex justify-center md:justify-end">
                       {renderStatusBadge(appointment.status)}
                     </div>
+                    
                     {/* Action Buttons for active appointments */}
                     {activeTab === 'upcoming' && (
-                      <>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                          {canCancel && (
-                            <button
-                              onClick={() => handleCancelClick(appointment)}
-                              className="w-full sm:w-auto px-4 py-2 text-sm font-bold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 rounded-xl transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                          {canReschedule && (
-                            <button
-                              onClick={() => handleRescheduleClick(appointment)}
-                              className="w-full sm:w-auto px-4 py-2 text-sm font-bold text-amber-600 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 rounded-xl transition-colors"
-                            >
-                              Remarcar
-                            </button>
-                          )}
-                        </div>
-
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-center">
+                        {canCancel && (
+                          <button
+                            onClick={() => handleCancelClick(appointment)}
+                            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 bg-slate-50 hover:bg-rose-50 dark:bg-slate-800/40 dark:hover:bg-rose-950/15 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-all"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                        {canReschedule && (
+                          <button
+                            onClick={() => handleRescheduleClick(appointment)}
+                            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 bg-slate-50 hover:bg-amber-50 dark:bg-slate-800/40 dark:hover:bg-amber-950/15 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-all"
+                          >
+                            Remarcar
+                          </button>
+                        )}
+                        
                         {/* Room Access logic */}
                         {isRoomOpen && (
                           <button
-                            onClick={() => router.push('/paciente/sala/' + appointment.id)}
-                            className="w-full sm:w-auto px-5 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm bg-teal-600 hover:bg-teal-500 text-white cursor-pointer"
+                            onClick={() => router.push('/paciente/consulta/' + appointment.id)}
+                            className="relative w-full sm:w-auto overflow-hidden bg-teal-600 hover:bg-teal-500 active:scale-95 text-white text-xs font-bold uppercase tracking-wider py-2.5 px-5 rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 shrink-0"
                           >
+                            <span className="absolute inset-0 bg-white/20 animate-ping rounded-xl opacity-20" />
                             <Video className="w-4 h-4" />
                             Acessar Sala Virtual
                           </button>
                         )}
+                        
                         {!canReschedule && isUpcomingState && isRoomTooEarly && (
-                          <span className="text-[10px] font-medium text-slate-400 text-center sm:text-right max-w-[200px] leading-tight">
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 text-center md:text-right max-w-[200px] leading-tight">
                             Alterações só são permitidas com antecedência mínima.
                           </span>
                         )}
-                      </>
+                      </div>
                     )}
-
-
                   </div>
                 </div>
               );
@@ -417,7 +477,7 @@ export default function PatientAppointments() {
           <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 rounded-xl p-4 flex items-start gap-3 mb-6">
             <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <p className="text-sm text-rose-800 dark:text-rose-300">
-              Tem certeza que deseja cancelar sua consulta com <strong>Dr(a). {appointmentToCancel?.doctorProfile.name}</strong> agendada para o dia <strong>{appointmentToCancel && format(new Date(appointmentToCancel.date), "dd/MM/yyyy 'às' HH:mm")}</strong>?
+              Tem certeza que deseja cancelar sua consulta com <strong>Dr(a). {appointmentToCancel?.doctorProfile.name}</strong> agendada para o dia <strong>{appointmentToCancel && formatDateTime(appointmentToCancel.date)}</strong>?
             </p>
           </div>
 
@@ -483,8 +543,8 @@ export default function PatientAppointments() {
             </label>
             <input
               type="date"
-              min={format(new Date(), 'yyyy-MM-dd')}
-              value={format(rescheduleDate, 'yyyy-MM-dd')}
+              min={formatISO(new Date())}
+              value={formatISO(rescheduleDate)}
               onChange={(e) => {
                 if (e.target.value) {
                   const [year, month, day] = e.target.value.split('-').map(Number);

@@ -1,5 +1,5 @@
 # generated: 2026-05-12T20:07:23-03:00
-# last_updated: 2026-05-12T20:07:23-03:00
+# last_updated: 2026-07-08T03:23:00-03:00
 # project: ImNotMedical
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-12T20:07:23-03:00
-last_updated: 2026-06-19T11:36:00-03:00
+last_updated: 2026-07-18T08:09:00-03:00
 project: Zello
 project_key: NOKEY
 tracking_system: file-system
@@ -62,14 +62,17 @@ development_status:
   2-7-dashboard-redesign-and-document-migration: done
   2-8-patient-journey-redesign: done
   2-9-patient-appointment-reschedule-flow: done
-  epic-2-retrospective: optional
+  2-10-technical-debt-cleanup: done
+  epic-2-retrospective: done
 
-  epic-3: backlog
-  3-1-pre-consultation-triage-questionnaire: backlog
-  3-2-digital-consent-form-lgpd: backlog
-  3-3-device-check-in-modal: backlog
-  3-4-virtual-waiting-room-dynamic-status: backlog
-  epic-3-retrospective: optional
+  epic-3: done
+  3-1-pre-consultation-triage-questionnaire: done
+  3-2-digital-consent-form-lgpd: done
+  3-3-device-check-in-modal: done
+  3-4-virtual-waiting-room-dynamic-status: done
+  3-5-legal-consent-versioning-compliance: done
+  3-6-technical-debt-review-cleanup: done
+  epic-3-retrospective: done
 
   epic-4: backlog
   4-1-consultation-state-machine-socket-rooms: backlog

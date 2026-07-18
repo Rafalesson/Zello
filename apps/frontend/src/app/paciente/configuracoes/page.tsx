@@ -36,6 +36,7 @@ function PasswordInput({ placeholder }: { placeholder: string }) {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'dados' | 'seguranca'>('dados');
 
   return (
     <div className="max-w-5xl mx-auto mt-6 px-4 pb-12">
@@ -49,10 +50,42 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-5 gap-8 items-start">
-        {/* Personal Data Section - Takes 3 columns */}
-        <div className="lg:col-span-3 space-y-6">
-          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-slate-200 dark:border-slate-700 mb-8 gap-6">
+        <button
+          type="button"
+          onClick={() => setActiveTab('dados')}
+          className={`pb-3 text-sm font-bold transition-all relative outline-none ${
+            activeTab === 'dados'
+              ? 'text-teal-600 dark:text-teal-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          Dados Pessoais
+          {activeTab === 'dados' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500 rounded-full" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('seguranca')}
+          className={`pb-3 text-sm font-bold transition-all relative outline-none ${
+            activeTab === 'seguranca'
+              ? 'text-teal-600 dark:text-teal-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          Segurança
+          {activeTab === 'seguranca' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500 rounded-full" />
+          )}
+        </button>
+      </div>
+
+      <div className="max-w-3xl">
+        {activeTab === 'dados' ? (
+          /* Personal Data Section */
+          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
                 <User className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -148,11 +181,9 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
-        </div>
-
-        {/* Security Section - Takes 2 columns */}
-        <div className="lg:col-span-2 space-y-6">
-          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        ) : (
+          /* Security Section */
+          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm max-w-xl animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                 <Shield className="w-5 h-5 text-slate-600 dark:text-slate-300" />
@@ -180,7 +211,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
-        </div>
+        )}
       </div>
     </div>
   );

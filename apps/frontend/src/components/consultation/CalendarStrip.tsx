@@ -63,7 +63,7 @@ export function CalendarStrip({ onSelectDate, selectedDate, hasSlots }: Calendar
         </button>
         <span className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
           <CalendarIcon className="h-4 w-4 text-teal-600" />
-          {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+          {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentMonth)}
         </span>
         <button 
           onClick={handleNextMonth} 
@@ -108,7 +108,7 @@ export function CalendarStrip({ onSelectDate, selectedDate, hasSlots }: Calendar
               aria-pressed={isSelected}
             >
               <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                {format(date, 'd')}
+                {date.getDate()}
               </span>
               
               {!isDisabled && (

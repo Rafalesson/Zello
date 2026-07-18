@@ -30,6 +30,9 @@ enum ConsultationStatus {
   AGENDADA
   CANCELADA
   REALIZADA
+  EM_ESPERA
+  EM_ANDAMENTO
+  NAO_REALIZADA
 }
 
 model Address {
@@ -155,6 +158,13 @@ model CidCode {
   @@index([code])
 }
 
+enum SymptomDuration {
+  HOJE
+  ONTEM
+  ESTA_SEMANA
+  MAIS_DE_UMA_SEMANA
+}
+
 model Appointment {
   id               Int                @id @default(autoincrement())
   doctorProfile    DoctorProfile      @relation(fields: [doctorProfileId], references: [id])
@@ -166,8 +176,42 @@ model Appointment {
   cancellationReason String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  preTriage        PreTriage?
+  consentRecord    ConsentRecord?
 
   @@index([doctorProfileId])
   @@index([patientProfileId])
   @@unique([doctorProfileId, date])
 }
+
+model PreTriage {
+  id            Int              @id @default(autoincrement())
+  symptoms      String           @db.VarChar(500)
+  duration      SymptomDuration
+  intensity     Int
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  appointment   Appointment      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId Int              @unique
+}
+
+model ConsentRecord {
+  id            Int         @id @default(autoincrement())
+  accepted      Boolean
+  ipAddress     String?
+  userAgent     String?
+  termsVersion  String      @default("v1.0")
+  acceptedAt    DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId Int         @unique
+}
+
+model LegalTerms {
+  id        Int      @id @default(autoincrement())
+  version   String   @unique
+  content   String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

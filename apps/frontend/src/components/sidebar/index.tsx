@@ -91,7 +91,7 @@ export function Sidebar({ closeSidebar, isCollapsed = false, toggleCollapse }: S
         {toggleCollapse && (
           <button 
             onClick={toggleCollapse} 
-            className={`p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${isCollapsed ? 'mt-2' : ''}`}
+            className={`p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${isCollapsed ? 'mt-2' : ''}`}
             title={isCollapsed ? "Expandir Menu (Ctrl+B)" : "Recolher Menu (Ctrl+B)"}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -142,7 +142,7 @@ export function Sidebar({ closeSidebar, isCollapsed = false, toggleCollapse }: S
                   } ${
                     isActive
                       ? 'bg-teal-50/80 text-teal-700 dark:bg-slate-800 dark:text-teal-400 font-bold border-l-4 border-teal-500 pl-1.5'
-                      : 'text-slate-650 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-350 dark:hover:bg-slate-800/60 dark:hover:text-white'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-white'
                   }`}
                   title={isCollapsed ? item.name : undefined}
                 >
@@ -160,7 +160,7 @@ export function Sidebar({ closeSidebar, isCollapsed = false, toggleCollapse }: S
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className={`flex items-center w-full rounded-lg transition-all duration-200 text-slate-650 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-350 dark:hover:bg-slate-800/60 dark:hover:text-white text-sm font-medium ${
+          className={`flex items-center w-full rounded-lg transition-all duration-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-white text-sm font-medium ${
             isCollapsed ? 'justify-center p-2.5' : 'p-2.5'
           }`}
           title={isCollapsed ? (isDark ? 'Modo Claro' : 'Modo Escuro') : undefined}
@@ -193,7 +193,7 @@ export function Sidebar({ closeSidebar, isCollapsed = false, toggleCollapse }: S
         maxWidth="max-w-sm"
       >
         <div className="mt-2 space-y-5">
-          <p className="text-sm text-slate-650 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Tem certeza que deseja sair do sistema? Suas sessões ativas serão encerradas.
           </p>
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700/60">

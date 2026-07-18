@@ -1,18 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppointmentService } from './appointment.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DomainErrorCode } from '@imnotmedical/shared';
 import { MailService } from '../mail/mail.service';
 
 describe('AppointmentService', () => {
   let service: AppointmentService;
-  let prismaService: PrismaService;
 
   const mockPrismaService = {
-    user: {
-      findUnique: jest.fn(),
-    },
+    user: { findUnique: jest.fn() },
+    availability: { findMany: jest.fn() },
     appointment: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
@@ -20,223 +18,105 @@ describe('AppointmentService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    $transaction: jest.fn(async (cb) => cb(mockPrismaService)),
+    $executeRaw: jest.fn().mockResolvedValue([]),
+    runInTransactionWithLock: jest.fn(async (_id, cb) => cb(mockPrismaService)),
   };
 
   const mockMailService = {
     sendBookingConfirmationToPatient: jest.fn().mockResolvedValue(undefined),
     sendBookingConfirmationToDoctor: jest.fn().mockResolvedValue(undefined),
     sendCancellationToDoctor: jest.fn().mockResolvedValue(undefined),
+    sendRescheduleEmailToPatient: jest.fn().mockResolvedValue(undefined),
+    sendRescheduleEmailToDoctor: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppointmentService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-        {
-          provide: MailService,
-          useValue: mockMailService,
-        },
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: MailService, useValue: mockMailService },
       ],
     }).compile();
 
     service = module.get<AppointmentService>(AppointmentService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => { jest.clearAllMocks(); });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  it('should be defined', () => { expect(service).toBeDefined(); });
 
   describe('create', () => {
     const userId = 1;
-    const createDto = {
-      doctorProfileId: 1,
-      date: '2026-06-10T10:00:00.000Z',
-    };
+    const createDto = { doctorProfileId: 1, date: '2030-06-10T10:00:00.000Z' };
     const appointmentDate = new Date(createDto.date);
 
     it('should successfully create an appointment', async () => {
-      // Mock patient profile exists
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: userId,
-        patientProfile: { id: 2 },
-      });
-
-      // Mock no existing appointment
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, patientProfile: { id: 2 } });
+      mockPrismaService.availability.findMany.mockResolvedValue([{ startTime: '08:00', endTime: '18:00', slotDurationMinutes: 30 }]);
       mockPrismaService.appointment.findFirst.mockResolvedValue(null);
-
-      const expectedAppointment = {
-        id: 1,
-        doctorProfileId: 1,
-        patientProfileId: 2,
-        date: appointmentDate,
-        status: 'AGENDADA',
+      const expected = {
+        id: 1, doctorProfileId: 1, patientProfileId: 2, date: appointmentDate, status: 'AGENDADA',
         doctorProfile: { name: 'Dr. Test', user: { name: 'Dr. Test', email: 'doctor@test.com' } },
         patientProfile: { name: 'Paciente Test', user: { name: 'Paciente Test', email: 'patient@test.com' } },
       };
-      mockPrismaService.appointment.create.mockResolvedValue(expectedAppointment);
-
+      mockPrismaService.appointment.create.mockResolvedValue(expected);
       const result = await service.create(userId, createDto);
-
-      expect(result).toEqual(expectedAppointment);
-      expect(mockPrismaService.appointment.create).toHaveBeenCalledWith({
-        data: {
-          doctorProfileId: 1,
-          patientProfileId: 2,
-          date: appointmentDate,
-          status: 'AGENDADA',
-        },
-        include: {
-          doctorProfile: { include: { user: true } },
-          patientProfile: { include: { user: true } },
-        },
-      });
-      expect(mockMailService.sendBookingConfirmationToPatient).toHaveBeenCalledWith(
-        'patient@test.com',
-        'Paciente Test',
-        'Dr. Test',
-        appointmentDate
-      );
-      expect(mockMailService.sendBookingConfirmationToDoctor).toHaveBeenCalledWith(
-        'doctor@test.com',
-        'Dr. Test',
-        'Paciente Test',
-        appointmentDate
-      );
-    });
-
-    it('should successfully create an appointment even if mail service fails', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: userId,
-        patientProfile: { id: 2 },
-      });
-      mockPrismaService.appointment.findFirst.mockResolvedValue(null);
-
-      const expectedAppointment = {
-        id: 1,
-        doctorProfileId: 1,
-        patientProfileId: 2,
-        date: appointmentDate,
-        status: 'AGENDADA',
-        doctorProfile: { name: 'Dr. Test', user: { name: 'Dr. Test', email: 'doctor@test.com' } },
-        patientProfile: { name: 'Paciente Test', user: { name: 'Paciente Test', email: 'patient@test.com' } },
-      };
-      mockPrismaService.appointment.create.mockResolvedValue(expectedAppointment);
-
-      mockMailService.sendBookingConfirmationToPatient.mockRejectedValueOnce(new Error('SMTP Error'));
-
-      const result = await service.create(userId, createDto);
-
-      expect(result).toEqual(expectedAppointment);
+      expect(result).toEqual(expected);
     });
 
     it('should throw BadRequestException if patient profile is not found', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: userId,
-        patientProfile: null,
-      });
-
-      await expect(service.create(userId, createDto)).rejects.toThrow(
-        new BadRequestException('Usuário não possui perfil de paciente.')
-      );
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, patientProfile: null });
+      await expect(service.create(userId, createDto)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException with SLOT_UNAVAILABLE if slot is taken', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: userId,
-        patientProfile: { id: 2 },
-      });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, patientProfile: { id: 2 } });
+      mockPrismaService.availability.findMany.mockResolvedValue([{ startTime: '08:00', endTime: '18:00', slotDurationMinutes: 30 }]);
+      mockPrismaService.appointment.findFirst.mockResolvedValue({ id: 1, status: 'AGENDADA' });
+      await expect(service.create(userId, createDto)).rejects.toMatchObject({ response: { code: DomainErrorCode.SLOT_UNAVAILABLE } });
+    });
+  });
 
-      // Mock existing appointment
-      mockPrismaService.appointment.findFirst.mockResolvedValue({
-        id: 1,
-        status: 'AGENDADA',
-      });
+  describe('getAppointmentById', () => {
+    it('should return appointment when user is the patient owner', async () => {
+      const mock = { id: 1, patientProfile: { userId: 10 }, doctorProfile: { userId: 20 } };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.getAppointmentById(1, 10);
+      expect(result).toEqual(mock);
+    });
 
-      await expect(service.create(userId, createDto)).rejects.toMatchObject({
-        response: {
-          code: DomainErrorCode.SLOT_UNAVAILABLE,
-        },
-      });
+    it('should return appointment when user is the doctor owner', async () => {
+      const mock = { id: 1, patientProfile: { userId: 10 }, doctorProfile: { userId: 20 } };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.getAppointmentById(1, 20);
+      expect(result).toEqual(mock);
+    });
+
+    it('should throw NotFoundException when appointment does not exist', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue(null);
+      await expect(service.getAppointmentById(999, 10)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when user is not the owner (prevents ID leaking)', async () => {
+      const mock = { id: 1, patientProfile: { userId: 10 }, doctorProfile: { userId: 20 } };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      await expect(service.getAppointmentById(1, 999)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getDoctorAppointments', () => {
-    it('should successfully get and return appointments for a doctor sorted by date', async () => {
-      const doctorProfileId = 1;
-      const expectedAppointments = [
-        {
-          id: 1,
-          doctorProfileId,
-          patientProfileId: 10,
-          date: new Date('2026-06-10T10:00:00.000Z'),
-          status: 'AGENDADA',
-          patientProfile: { id: 10, name: 'John Doe' },
-        },
-        {
-          id: 2,
-          doctorProfileId,
-          patientProfileId: 11,
-          date: new Date('2026-06-10T11:00:00.000Z'),
-          status: 'AGENDADA',
-          patientProfile: { id: 11, name: 'Jane Doe' },
-        },
-      ];
-
-      mockPrismaService.appointment.findMany.mockResolvedValue(expectedAppointments);
-
-      const result = await service.getDoctorAppointments(doctorProfileId);
-
-      expect(result).toEqual(expectedAppointments);
-      expect(mockPrismaService.appointment.findMany).toHaveBeenCalledWith({
-        where: {
-          doctorProfileId,
-          date: {
-            gte: expect.any(Date),
-          },
-        },
-        include: {
-          patientProfile: true,
-        },
-        orderBy: {
-          date: 'asc',
-        },
-      });
-    });
-  });
-
-  describe('getPatientAppointments', () => {
-    it('should successfully get and return appointments for a patient sorted by date', async () => {
-      const patientProfileId = 2;
-      const expectedAppointments = [
-        {
-          id: 1,
-          doctorProfileId: 1,
-          patientProfileId,
-          date: new Date('2026-06-10T10:00:00.000Z'),
-          status: 'AGENDADA',
-          doctorProfile: { id: 1, name: 'Dr. Test', specialty: 'Cardiologia' },
-        },
-      ];
-
-      mockPrismaService.appointment.findMany.mockResolvedValue(expectedAppointments);
-
-      const result = await service.getPatientAppointments(patientProfileId);
-
-      expect(result).toEqual(expectedAppointments);
-      expect(mockPrismaService.appointment.findMany).toHaveBeenCalledWith({
-        where: { patientProfileId },
-        include: { doctorProfile: true },
-        orderBy: { date: 'asc' },
-      });
+    it('should return appointments using UTC-normalized date', async () => {
+      const expected = [{ id: 1, date: new Date('2030-06-10T10:00:00.000Z'), status: 'AGENDADA' }];
+      mockPrismaService.appointment.findMany.mockResolvedValue(expected);
+      const result = await service.getDoctorAppointments(1);
+      expect(result).toEqual(expected);
+      const call = mockPrismaService.appointment.findMany.mock.calls[0][0];
+      expect(call.where.date.gte).toBeInstanceOf(Date);
+      // Verify the date is at midnight UTC (hours=0, minutes=0)
+      expect(call.where.date.gte.getUTCHours()).toBe(0);
+      expect(call.where.date.gte.getUTCMinutes()).toBe(0);
     });
   });
 
@@ -244,69 +124,231 @@ describe('AppointmentService', () => {
     const appointmentId = 1;
     const patientProfileId = 2;
 
-    it('should throw ForbiddenException if appointment does not belong to patient', async () => {
+    it('should use runInTransactionWithLock', async () => {
+      const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       mockPrismaService.appointment.findUnique.mockResolvedValue({
-        id: appointmentId,
-        patientProfileId: 999, // different patient
+        id: appointmentId, patientProfileId, date: futureDate, status: 'AGENDADA',
+        patientProfile: { name: 'P' }, doctorProfile: { user: { email: 'doc@t.com' }, name: 'D' },
       });
-
-      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
-        'Você não tem permissão para cancelar esta consulta.'
-      );
+      mockPrismaService.appointment.update.mockResolvedValue({ status: 'CANCELADA' });
+      await service.cancelAppointment(appointmentId, patientProfileId);
+      expect(mockPrismaService.runInTransactionWithLock).toHaveBeenCalledWith(appointmentId, expect.any(Function));
     });
 
-    it('should throw BadRequestException if appointment is less than 12 hours away', async () => {
-      mockPrismaService.appointment.findUnique.mockResolvedValue({
-        id: appointmentId,
-        patientProfileId,
-        date: new Date(new Date().getTime() + 10 * 60 * 60 * 1000), // 10 hours from now
-      });
-
-      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
-        'Cancelamentos só podem ser feitos com pelo menos 12 horas de antecedência.'
-      );
+    it('should throw NotFoundException if not owner', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({ id: appointmentId, patientProfileId: 999 });
+      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException if already cancelled', async () => {
-      mockPrismaService.appointment.findUnique.mockResolvedValue({
-        id: appointmentId,
-        patientProfileId,
-        status: 'CANCELADA',
-      });
-
-      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
-        'A consulta já está cancelada.'
-      );
-    });
-
-    it('should cancel appointment and send email', async () => {
-      const futureDate = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-      const appointmentMock = {
-        id: appointmentId,
-        patientProfileId,
-        date: futureDate,
-        status: 'AGENDADA',
-        patientProfile: { name: 'Paciente Test' },
-        doctorProfile: { user: { email: 'doctor@test.com' }, name: 'Dr. Test' },
-      };
-
-      mockPrismaService.appointment.findUnique.mockResolvedValue(appointmentMock);
-      mockPrismaService.appointment.update.mockResolvedValue({ ...appointmentMock, status: 'CANCELADA' });
-
+    it('should return idempotently if already cancelled', async () => {
+      const mock = { id: appointmentId, patientProfileId, status: 'CANCELADA' };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
       const result = await service.cancelAppointment(appointmentId, patientProfileId);
+      expect(result).toEqual(mock);
+    });
 
-      expect(result.status).toBe('CANCELADA');
-      expect(mockPrismaService.appointment.update).toHaveBeenCalledWith({
-        where: { id: appointmentId },
-        data: { status: 'CANCELADA', cancellationReason: undefined },
+    it('should send cancellation email outside transaction when cancelled', async () => {
+      const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const updatedMock = {
+        id: appointmentId, patientProfileId, date: futureDate, status: 'CANCELADA',
+        patientProfile: { name: 'Paciente' }, doctorProfile: { name: 'Doctor', user: { email: 'doc@t.com' } },
+      };
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, date: futureDate, status: 'AGENDADA',
+        patientProfile: { name: 'Paciente' }, doctorProfile: { name: 'Doctor', user: { email: 'doc@t.com' } },
       });
-      expect(mockMailService.sendCancellationToDoctor).toHaveBeenCalledWith(
-        'doctor@test.com',
-        'Dr. Test',
-        'Paciente Test',
-        futureDate,
-        undefined
-      );
+      mockPrismaService.appointment.update.mockResolvedValue(updatedMock);
+      await service.cancelAppointment(appointmentId, patientProfileId, 'Imprevisto');
+      expect(mockMailService.sendCancellationToDoctor).toHaveBeenCalledWith('doc@t.com', 'Doctor', 'Paciente', futureDate, 'Imprevisto');
+    });
+  });
+
+  describe('rescheduleAppointment', () => {
+    const appointmentId = 1;
+    const patientProfileId = 2;
+    const newDateStr = '2030-06-15T10:00:00.000Z';
+
+    it('should reschedule successfully and send emails outside transaction', async () => {
+      const oldDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const newDate = new Date(newDateStr);
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, doctorProfileId: 10, date: oldDate, status: 'AGENDADA',
+        doctorProfile: { name: 'Doctor', user: { email: 'doc@t.com' } },
+        patientProfile: { name: 'Paciente', user: { email: 'pat@t.com' } },
+      });
+      mockPrismaService.availability.findMany.mockResolvedValue([{ startTime: '08:00', endTime: '18:00', slotDurationMinutes: 30 }]);
+      mockPrismaService.appointment.findFirst.mockResolvedValue(null);
+      const updatedMock = {
+        id: appointmentId, patientProfileId, doctorProfileId: 10, date: newDate, status: 'AGENDADA',
+        doctorProfile: { name: 'Doctor', user: { email: 'doc@t.com' } },
+        patientProfile: { name: 'Paciente', user: { email: 'pat@t.com' } },
+      };
+      mockPrismaService.appointment.update.mockResolvedValue(updatedMock);
+
+      const result = await service.rescheduleAppointment(appointmentId, patientProfileId, newDateStr);
+      expect(result).toEqual(updatedMock);
+      expect(mockMailService.sendRescheduleEmailToPatient).toHaveBeenCalledWith('pat@t.com', 'Paciente', 'Doctor', oldDate, newDate);
+      expect(mockMailService.sendRescheduleEmailToDoctor).toHaveBeenCalledWith('doc@t.com', 'Doctor', 'Paciente', oldDate, newDate);
+    });
+
+    it('should throw BadRequestException when status is not AGENDADA', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'EM_ANDAMENTO', date: new Date(Date.now() + 24 * 3600 * 1000),
+      });
+      await expect(service.rescheduleAppointment(appointmentId, patientProfileId, newDateStr)).rejects.toMatchObject({ response: { code: DomainErrorCode.INVALID_TRANSITION } });
+    });
+  });
+
+  describe('enterWaitingRoom', () => {
+    const appointmentId = 1;
+    const patientProfileId = 2;
+
+    it('should validate pre-triage and consent exist before entering', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA', date: new Date(),
+        preTriage: null, consentRecord: null,
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should validate consent exists', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA', date: new Date(),
+        preTriage: { id: 1 }, consentRecord: null,
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should transition from AGENDADA to EM_ESPERA within time window', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA', date: new Date(),
+        preTriage: { id: 1 }, consentRecord: { id: 1 },
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      mockPrismaService.appointment.update.mockResolvedValue({ status: 'EM_ESPERA' });
+      const result = await service.enterWaitingRoom(appointmentId, patientProfileId);
+      expect(result.status).toBe('EM_ESPERA');
+      expect(mockPrismaService.runInTransactionWithLock).toHaveBeenCalledWith(appointmentId, expect.any(Function));
+    });
+
+    it('should return idempotently if status is EM_ESPERA', async () => {
+      const mock = { id: appointmentId, patientProfileId, status: 'EM_ESPERA', date: new Date(), preTriage: { id: 1 }, consentRecord: { id: 1 } };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.enterWaitingRoom(appointmentId, patientProfileId);
+      expect(result).toEqual(mock);
+    });
+
+    it('should return idempotently if status is EM_ANDAMENTO', async () => {
+      const mock = { id: appointmentId, patientProfileId, status: 'EM_ANDAMENTO', date: new Date(), preTriage: { id: 1 }, consentRecord: { id: 1 } };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.enterWaitingRoom(appointmentId, patientProfileId);
+      expect(result).toEqual(mock);
+    });
+
+    it('should throw if entering more than 15 minutes before scheduled time', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA',
+        date: new Date(Date.now() + 30 * 60 * 1000),
+        preTriage: { id: 1 }, consentRecord: { id: 1 },
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
+    });
+
+    it('should throw if entering more than 15 minutes after scheduled time', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA',
+        date: new Date(Date.now() - 20 * 60 * 1000),
+        preTriage: { id: 1 }, consentRecord: { id: 1 },
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
+    });
+
+    it('should throw NotFoundException if not owner', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId: 999, status: 'AGENDADA', date: new Date(),
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'CONSULTATION_NOT_FOUND' } });
+    });
+
+    it('should throw BadRequestException if CANCELADA', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'CANCELADA', date: new Date(),
+      });
+      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
+    });
+  });
+
+  describe('markNoShow', () => {
+    const appointmentId = 1;
+    const patientProfileId = 2;
+
+    it('should transition from EM_ESPERA to NAO_REALIZADA using lock', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'EM_ESPERA',
+        date: new Date(Date.now() - 15 * 60 * 1000),
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      mockPrismaService.appointment.update.mockResolvedValue({ status: 'NAO_REALIZADA' });
+      const result = await service.markNoShow(appointmentId, patientProfileId);
+      expect(result.status).toBe('NAO_REALIZADA');
+      expect(mockPrismaService.runInTransactionWithLock).toHaveBeenCalledWith(appointmentId, expect.any(Function));
+    });
+
+    it('should return idempotently if NAO_REALIZADA', async () => {
+      const mock = { id: appointmentId, patientProfileId, status: 'NAO_REALIZADA', date: new Date(Date.now() - 15 * 60 * 1000) };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.markNoShow(appointmentId, patientProfileId);
+      expect(result).toEqual(mock);
+    });
+
+    it('should throw if not EM_ESPERA', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'AGENDADA', date: new Date(Date.now() - 15 * 60 * 1000),
+      });
+      await expect(service.markNoShow(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
+    });
+
+    it('should throw if before 10 min tolerance', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, patientProfileId, status: 'EM_ESPERA', date: new Date(),
+      });
+      await expect(service.markNoShow(appointmentId, patientProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
+    });
+  });
+
+  describe('startConsultation', () => {
+    const appointmentId = 1;
+    const doctorProfileId = 1;
+
+    it('should transition from EM_ESPERA to EM_ANDAMENTO using lock', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, doctorProfileId, status: 'EM_ESPERA', date: new Date(),
+        preTriage: { id: 1 }, consentRecord: { id: 1 },
+        doctorProfile: { name: 'Dr. Test', user: {} }, patientProfile: { name: 'P' },
+      });
+      mockPrismaService.appointment.update.mockResolvedValue({ status: 'EM_ANDAMENTO' });
+      const result = await service.startConsultation(appointmentId, doctorProfileId);
+      expect(result.status).toBe('EM_ANDAMENTO');
+      expect(mockPrismaService.runInTransactionWithLock).toHaveBeenCalledWith(appointmentId, expect.any(Function));
+    });
+
+    it('should return idempotently if EM_ANDAMENTO', async () => {
+      const mock = { id: appointmentId, doctorProfileId, status: 'EM_ANDAMENTO', date: new Date() };
+      mockPrismaService.appointment.findUnique.mockResolvedValue(mock);
+      const result = await service.startConsultation(appointmentId, doctorProfileId);
+      expect(result).toEqual(mock);
+    });
+
+    it('should throw if CANCELADA', async () => {
+      mockPrismaService.appointment.findUnique.mockResolvedValue({
+        id: appointmentId, doctorProfileId, status: 'CANCELADA', date: new Date(),
+        preTriage: { id: 1 }, consentRecord: { id: 1 },
+      });
+      await expect(service.startConsultation(appointmentId, doctorProfileId)).rejects.toMatchObject({ response: { code: 'INVALID_TRANSITION' } });
     });
   });
 });

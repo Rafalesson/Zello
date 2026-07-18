@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, Calendar as CalendarIcon, User, Clock, CheckCircle2, XCircle, Video, ChevronRight } from 'lucide-react';
+import { formatDateTime, formatISO } from '@/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Modal } from '@/components/common/Modal';
@@ -9,7 +10,7 @@ import { Modal } from '@/components/common/Modal';
 type AppointmentApi = {
   id: number;
   date: string;
-  status: 'AGENDADA' | 'CANCELADA' | 'REALIZADA';
+  status: 'AGENDADA' | 'CANCELADA' | 'REALIZADA' | 'EM_ESPERA' | 'EM_ANDAMENTO' | 'NAO_REALIZADA';
   patientProfile: {
     id: number;
     name: string;
@@ -22,6 +23,9 @@ const statusBadgeStyles: Record<string, string> = {
   REALIZADA: 'bg-green-50 text-green-700 border-green-250 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30',
   NAO_INICIADA: 'bg-gray-50 text-gray-700 border-gray-250 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
   REAGENDADA: 'bg-blue-50 text-blue-700 border-blue-250 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
+  EM_ESPERA: 'bg-teal-50 text-teal-700 border-teal-250 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900/30',
+  EM_ANDAMENTO: 'bg-indigo-50 text-indigo-700 border-indigo-250 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30',
+  NAO_REALIZADA: 'bg-rose-50 text-rose-700 border-rose-250 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30',
 };
 
 const isAppointmentMissed = (dateString: string) => {
@@ -31,8 +35,12 @@ const isAppointmentMissed = (dateString: string) => {
   return now > windowEnd;
 };
 
-const isAppointmentStartable = (dateString: string) => {
-  const appTime = new Date(dateString).getTime();
+const isAppointmentStartable = (appointment: AppointmentApi) => {
+  if (appointment.status === 'EM_ESPERA') return true;
+  if (appointment.status === 'EM_ANDAMENTO') return false;
+  if (appointment.status === 'CANCELADA' || appointment.status === 'REALIZADA' || appointment.status === 'NAO_REALIZADA') return false;
+
+  const appTime = new Date(appointment.date).getTime();
   const now = new Date().getTime();
   const windowStart = appTime - 15 * 60 * 1000;
   const windowEnd = appTime + 15 * 60 * 1000;
@@ -48,22 +56,14 @@ const getDisplayStatus = (appointment: AppointmentApi) => {
 
 const formatStatusText = (status: string) => {
   if (status === 'NAO_INICIADA') return 'NÃO INICIADA';
+  if (status === 'EM_ESPERA') return 'EM ESPERA';
+  if (status === 'EM_ANDAMENTO') return 'EM ANDAMENTO';
+  if (status === 'NAO_REALIZADA') return 'NÃO REALIZADA';
   return status;
 };
 
 const formatAppointmentDate = (dateString: string) => {
-  try {
-    const date = new Date(dateString);
-    const datePart = date.toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo',
-    });
-    const timePart = date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
-    });
-    return `${datePart} às ${timePart}`;
-  } catch (e) {
-    return dateString;
-  }
+    return formatDateTime(dateString);
 };
 
 const fetchDoctorAppointments = async (): Promise<AppointmentApi[]> => {
@@ -81,10 +81,38 @@ export default function ConsultasPage() {
   const {
     data: appointments,
     isLoading,
+    refetch,
   } = useQuery({
     queryKey: ['doctorAppointments'],
     queryFn: fetchDoctorAppointments,
   });
+
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleStartConsultation = async (appointmentId: number) => {
+    setIsStarting(true);
+    try {
+      await api.patch(`/appointments/${appointmentId}/start`);
+      await refetch();
+      // If we are in the details modal, update the selectedAppointment state
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment(prev => prev ? { ...prev, status: 'EM_ANDAMENTO' } : null);
+      }
+      alert('Atendimento iniciado com sucesso! O paciente foi redirecionado para a sala de consulta.');
+    } catch (error: any) {
+      console.error(error);
+      const errCode = error.response?.data?.code;
+      let errMsg = error.response?.data?.message;
+      
+      if (!errMsg && errCode === 'INVALID_TRANSITION') {
+        errMsg = 'Não é possível iniciar esta consulta no momento.';
+      }
+
+      alert(errMsg || 'Erro ao iniciar consulta.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const handleOpenDetails = (appointment: AppointmentApi) => {
     setSelectedAppointment(appointment);
@@ -97,6 +125,9 @@ export default function ConsultasPage() {
       case 'REALIZADA': return <CheckCircle2 className="w-3.5 h-3.5" />;
       case 'CANCELADA': return <XCircle className="w-3.5 h-3.5" />;
       case 'NAO_INICIADA': return <Clock className="w-3.5 h-3.5" />;
+      case 'EM_ESPERA': return <Video className="w-3.5 h-3.5 text-teal-500 animate-pulse" />;
+      case 'EM_ANDAMENTO': return <Video className="w-3.5 h-3.5 text-indigo-500" />;
+      case 'NAO_REALIZADA': return <XCircle className="w-3.5 h-3.5 text-rose-500" />;
       default: return null;
     }
   };
@@ -104,10 +135,7 @@ export default function ConsultasPage() {
   const filteredConsultas = useMemo(() => {
     if (!appointments) return [];
 
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-    });
-    const todayStr = formatter.format(new Date());
+    const todayStr = formatISO(new Date());
 
     return appointments.filter(c => {
       // Patient Filter
@@ -121,7 +149,7 @@ export default function ConsultasPage() {
       // Time Filter
       let matchesTime = true;
       try {
-        const appDateStr = formatter.format(new Date(c.date));
+        const appDateStr = formatISO(new Date(c.date));
         if (filterTime === 'HOJE') {
           matchesTime = appDateStr === todayStr;
         } else if (filterTime === 'PASSADO') {
@@ -180,7 +208,7 @@ export default function ConsultasPage() {
 
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
           <Filter className="h-4 w-4 text-gray-400 dark:text-slate-500 hidden md:block mr-1" />
-          {['TODAS', 'AGENDADA', 'REALIZADA', 'NAO_INICIADA', 'CANCELADA'].map(status => (
+          {['TODAS', 'AGENDADA', 'EM_ESPERA', 'EM_ANDAMENTO', 'REALIZADA', 'NAO_INICIADA', 'CANCELADA'].map(status => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
@@ -325,8 +353,8 @@ export default function ConsultasPage() {
               </div>
             </div>
              
-             {/* Rodapé e Ações */}
-             <div className="pt-6 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center w-full">
+             {/* Rodapé */}
+             <div className="pt-6 mt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between gap-3 items-center w-full">
                {getDisplayStatus(selectedAppointment) === 'AGENDADA' ? (
                  <button 
                    onClick={() => alert('Fluxo de cancelamento de consulta ainda não implementado no Backend.')} 
@@ -335,7 +363,7 @@ export default function ConsultasPage() {
                    Cancelar Consulta
                  </button>
                ) : (
-                 <div>{/* Spacer para manter distribuição correta */}</div>
+                 <div />
                )}
                
                <button 
@@ -344,13 +372,23 @@ export default function ConsultasPage() {
                >
                  Reagendar
                </button>
-               
-               {selectedAppointment.status === 'AGENDADA' && isAppointmentStartable(selectedAppointment.date) && (
-                 <button 
-                   onClick={() => alert('Consulta iniciada! Em breve redirecionaremos para a sala virtual.')}
-                   className="px-5 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none"
+
+               {selectedAppointment.status === 'EM_ANDAMENTO' && (
+                 <button
+                   onClick={() => alert('Entrando na chamada de vídeo...')}
+                   className="px-5 py-2 bg-indigo-500 text-white hover:bg-indigo-650 rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none"
                  >
-                   Iniciar Consulta
+                   Entrar na Chamada
+                 </button>
+               )}
+               
+               {(selectedAppointment.status === 'AGENDADA' || selectedAppointment.status === 'EM_ESPERA') && isAppointmentStartable(selectedAppointment) && (
+                 <button 
+                   onClick={() => handleStartConsultation(selectedAppointment.id)}
+                   disabled={isStarting}
+                   className="px-5 py-2 bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 dark:hover:text-white rounded-lg text-sm font-bold transition-all whitespace-nowrap focus:outline-none disabled:opacity-50"
+                 >
+                   {isStarting ? 'Iniciando...' : 'Iniciar Consulta'}
                  </button>
                )}
              </div>

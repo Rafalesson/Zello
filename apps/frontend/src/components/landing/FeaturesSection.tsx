@@ -49,7 +49,7 @@ export function FeaturesSection() {
                 Receitas e Atestados Digitais
               </dt>
               <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600 dark:text-slate-400">
-                <p className="flex-auto">Receba todos os seus documentos médicos com assinatura digital oficial logo após a consulta, aceitos em qualquer farmácia do Brasil.</p>
+                <p className="flex-auto">Receba todos os seus documentos médicos com assinatura digital logo após a consulta, aceitos em qualquer farmácia do Brasil.</p>
               </dd>
             </div>
 

@@ -9,7 +9,7 @@ async function main() {
   console.log('Iniciando o processo de seeding completo...');
 
   // Truncate tables with RESTART IDENTITY CASCADE
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "User", "DoctorProfile", "PatientProfile", "Address", "MedicalCertificate", "CidCode" RESTART IDENTITY CASCADE;`);
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "User", "DoctorProfile", "PatientProfile", "Address", "MedicalCertificate", "CidCode", "LegalTerms" RESTART IDENTITY CASCADE;`);
   console.log('Tabelas limpas com sucesso.');
 
   // CID10 Seeding (keep your existing CID10 seeding logic)
@@ -63,6 +63,7 @@ async function main() {
           name: 'Dra. Barbara da Silva',
           crm: '12345SP',
           specialty: 'Cardiologia',
+          status: 'APPROVED',
           addressId: doctorAddress.id
         }
       }
@@ -98,6 +99,51 @@ async function main() {
     }
   });
   console.log(`Admin de teste criado: ${adminUser.email}`);
+
+  // Create Initial Legal Terms (v1.0)
+  const initialTermsContent = `1. Escopo do Atendimento Remoto
+Este atendimento é realizado por meio de telemedicina, conforme regulamentação do Conselho Federal de Medicina (CFM). A consulta remota tem como objetivo oferecer orientação médica à distância, mas não substitui o atendimento presencial em situações de emergência ou que exijam exame físico.
+O profissional de saúde poderá, a seu critério clínico, recomendar um atendimento presencial caso julgue necessário para a adequada avaliação do seu quadro.
+
+2. Limitações da Telemedicina
+A teleconsulta possui limitações inerentes, incluindo a impossibilidade de realização de exame físico direto. Por isso:
+- Diagnósticos podem ser presuntivos e sujeitos a confirmação posterior.
+- A qualidade da conexão de internet pode impactar a comunicação.
+- Em caso de urgência ou emergência médica, procure atendimento presencial imediatamente.
+
+3. Consentimento de Uso de Dados Sensíveis
+Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD), informamos que os dados coletados durante esta consulta, incluindo dados pessoais sensíveis de saúde, serão tratados exclusivamente para:
+- Prestação do atendimento médico solicitado.
+- Registro em prontuário eletrônico conforme exigência legal.
+- Emissão de receitas, atestados e documentos clínicos.
+Seus dados não serão compartilhados com terceiros sem o seu consentimento expresso, exceto por obrigação legal ou regulatória.
+
+4. Direitos do Paciente sob a LGPD
+Você tem o direito de, a qualquer momento:
+- Solicitar acesso aos seus dados pessoais armazenados.
+- Solicitar a correção de dados incompletos ou incorretos.
+- Solicitar a anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos.
+- Revogar o consentimento para tratamento de dados, ciente de que isso poderá impactar a continuidade do atendimento.`;
+
+  await prisma.legalTerms.create({
+    data: {
+      version: 'v1.0',
+      content: initialTermsContent,
+      isActive: true,
+    },
+  });
+  console.log('Termo de consentimento inicial v1.0 criado.');
+
+  // Create active appointment for testing check-in
+  const testAppointment = await prisma.appointment.create({
+    data: {
+      doctorProfileId: 1,
+      patientProfileId: 1,
+      date: new Date(), // scheduled now to allow immediate testing
+      status: 'AGENDADA',
+    },
+  });
+  console.log(`Consulta de teste criada com ID: ${testAppointment.id}`);
 
   console.log('Seeding completo!');
 }

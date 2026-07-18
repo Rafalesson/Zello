@@ -1,0 +1,9 @@
+export declare enum ConsultationStatus {
+    AGENDADA = "AGENDADA",
+    CANCELADA = "CANCELADA",
+    REALIZADA = "REALIZADA",
+    EM_ESPERA = "EM_ESPERA",
+    EM_ANDAMENTO = "EM_ANDAMENTO",
+    NAO_REALIZADA = "NAO_REALIZADA"
+}
+//# sourceMappingURL=consultation-status.d.ts.map

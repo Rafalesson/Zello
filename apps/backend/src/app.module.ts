@@ -18,6 +18,8 @@ import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { PreTriageModule } from './pre-triage/pre-triage.module';
+import { ConsentModule } from './consent/consent.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { AppointmentModule } from './appointment/appointment.module';
     AdminModule,
     AvailabilityModule,
     AppointmentModule,
+    PreTriageModule,
+    ConsentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,1051 @@
+diff --git a/apps/backend/prisma/schema.prisma b/apps/backend/prisma/schema.prisma
+index 088b21e..f97b912 100644
+--- a/apps/backend/prisma/schema.prisma
++++ b/apps/backend/prisma/schema.prisma
+@@ -30,6 +30,9 @@ enum ConsultationStatus {
+   AGENDADA
+   CANCELADA
+   REALIZADA
++  EM_ESPERA
++  EM_ANDAMENTO
++  NAO_REALIZADA
+ }
+ 
+ model Address {
+@@ -155,6 +158,13 @@ model CidCode {
+   @@index([code])
+ }
+ 
++enum SymptomDuration {
++  HOJE
++  ONTEM
++  ESTA_SEMANA
++  MAIS_DE_UMA_SEMANA
++}
++
+ model Appointment {
+   id               Int                @id @default(autoincrement())
+   doctorProfile    DoctorProfile      @relation(fields: [doctorProfileId], references: [id])
+@@ -166,8 +176,42 @@ model Appointment {
+   cancellationReason String?
+   createdAt        DateTime           @default(now())
+   updatedAt        DateTime           @updatedAt
++  preTriage        PreTriage?
++  consentRecord    ConsentRecord?
+ 
+   @@index([doctorProfileId])
+   @@index([patientProfileId])
+   @@unique([doctorProfileId, date])
+ }
++
++model PreTriage {
++  id            Int              @id @default(autoincrement())
++  symptoms      String           @db.VarChar(500)
++  duration      SymptomDuration
++  intensity     Int
++  createdAt     DateTime         @default(now())
++  updatedAt     DateTime         @updatedAt
++  appointment   Appointment      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
++  appointmentId Int              @unique
++}
++
++model ConsentRecord {
++  id            Int         @id @default(autoincrement())
++  accepted      Boolean
++  ipAddress     String?
++  userAgent     String?
++  termsVersion  String      @default("v1.0")
++  acceptedAt    DateTime    @default(now())
++  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
++  appointmentId Int         @unique
++}
++
++model LegalTerms {
++  id        Int      @id @default(autoincrement())
++  version   String   @unique
++  content   String   @db.Text
++  isActive  Boolean  @default(true)
++  createdAt DateTime @default(now())
++  updatedAt DateTime @updatedAt
++}
++
+diff --git a/apps/backend/src/appointment/appointment.controller.ts b/apps/backend/src/appointment/appointment.controller.ts
+index 1398d68..717c397 100644
+--- a/apps/backend/src/appointment/appointment.controller.ts
++++ b/apps/backend/src/appointment/appointment.controller.ts
+@@ -83,5 +83,31 @@ export class AppointmentController {
+     }
+     return this.appointmentService.rescheduleAppointment(id, patientProfileId, newDate);
+   }
++
++  @Patch(':id/waiting-room')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT')
++  async enterWaitingRoom(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
++    const patientProfileId = req.user.patientProfile?.id;
++    if (!patientProfileId) {
++      throw new ForbiddenException(
++        'Perfil de paciente não encontrado para este usuário.',
++      );
++    }
++    return this.appointmentService.enterWaitingRoom(id, patientProfileId);
++  }
++
++  @Patch(':id/no-show')
++  @UseGuards(AuthGuard, RolesGuard)
++  @Roles('PATIENT')
++  async markNoShow(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
++    const patientProfileId = req.user.patientProfile?.id;
++    if (!patientProfileId) {
++      throw new ForbiddenException(
++        'Perfil de paciente não encontrado para este usuário.',
++      );
++    }
++    return this.appointmentService.markNoShow(id, patientProfileId);
++  }
+ }
+ 
+diff --git a/apps/backend/src/appointment/appointment.service.spec.ts b/apps/backend/src/appointment/appointment.service.spec.ts
+index a432422..fb0e2da 100644
+--- a/apps/backend/src/appointment/appointment.service.spec.ts
++++ b/apps/backend/src/appointment/appointment.service.spec.ts
+@@ -20,6 +20,8 @@ describe('AppointmentService', () => {
+       findMany: jest.fn(),
+       update: jest.fn(),
+     },
++    $transaction: jest.fn(async (cb) => cb(mockPrismaService)),
++    $executeRaw: jest.fn().mockResolvedValue([]),
+   };
+ 
+   const mockMailService = {
+@@ -59,7 +61,7 @@ describe('AppointmentService', () => {
+     const userId = 1;
+     const createDto = {
+       doctorProfileId: 1,
+-      date: '2026-06-10T10:00:00.000Z',
++      date: '2030-06-10T10:00:00.000Z',
+     };
+     const appointmentDate = new Date(createDto.date);
+ 
+@@ -177,7 +179,7 @@ describe('AppointmentService', () => {
+           id: 1,
+           doctorProfileId,
+           patientProfileId: 10,
+-          date: new Date('2026-06-10T10:00:00.000Z'),
++          date: new Date('2030-06-10T10:00:00.000Z'),
+           status: 'AGENDADA',
+           patientProfile: { id: 10, name: 'John Doe' },
+         },
+@@ -185,7 +187,7 @@ describe('AppointmentService', () => {
+           id: 2,
+           doctorProfileId,
+           patientProfileId: 11,
+-          date: new Date('2026-06-10T11:00:00.000Z'),
++          date: new Date('2030-06-10T11:00:00.000Z'),
+           status: 'AGENDADA',
+           patientProfile: { id: 11, name: 'Jane Doe' },
+         },
+@@ -221,7 +223,7 @@ describe('AppointmentService', () => {
+           id: 1,
+           doctorProfileId: 1,
+           patientProfileId,
+-          date: new Date('2026-06-10T10:00:00.000Z'),
++          date: new Date('2030-06-10T10:00:00.000Z'),
+           status: 'AGENDADA',
+           doctorProfile: { id: 1, name: 'Dr. Test', specialty: 'Cardiologia' },
+         },
+@@ -244,14 +246,14 @@ describe('AppointmentService', () => {
+     const appointmentId = 1;
+     const patientProfileId = 2;
+ 
+-    it('should throw ForbiddenException if appointment does not belong to patient', async () => {
++    it('should throw NotFoundException if appointment does not belong to patient', async () => {
+       mockPrismaService.appointment.findUnique.mockResolvedValue({
+         id: appointmentId,
+         patientProfileId: 999, // different patient
+       });
+ 
+       await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
+-        'Você não tem permissão para cancelar esta consulta.'
++        'Consulta não encontrada.'
+       );
+     });
+ 
+@@ -267,16 +269,16 @@ describe('AppointmentService', () => {
+       );
+     });
+ 
+-    it('should throw BadRequestException if already cancelled', async () => {
+-      mockPrismaService.appointment.findUnique.mockResolvedValue({
++    it('should return the appointment if already cancelled', async () => {
++      const mockCancelledApp = {
+         id: appointmentId,
+         patientProfileId,
+         status: 'CANCELADA',
+-      });
++      };
++      mockPrismaService.appointment.findUnique.mockResolvedValue(mockCancelledApp);
+ 
+-      await expect(service.cancelAppointment(appointmentId, patientProfileId)).rejects.toThrow(
+-        'A consulta já está cancelada.'
+-      );
++      const result = await service.cancelAppointment(appointmentId, patientProfileId);
++      expect(result).toEqual(mockCancelledApp);
+     });
+ 
+     it('should cancel appointment and send email', async () => {
+@@ -309,4 +311,122 @@ describe('AppointmentService', () => {
+       );
+     });
+   });
++
++  describe('enterWaitingRoom', () => {
++    const appointmentId = 1;
++    const patientProfileId = 2;
++
++    it('should transition from AGENDADA to EM_ESPERA', async () => {
++      const appointmentMock = {
++        id: appointmentId,
++        patientProfileId,
++        status: 'AGENDADA',
++        doctorProfile: { name: 'Dr. Test', user: { email: 'doctor@test.com' } },
++        patientProfile: { name: 'Paciente Test' },
++      };
++
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointmentMock);
++      mockPrismaService.appointment.update.mockResolvedValue({
++        ...appointmentMock,
++        status: 'EM_ESPERA',
++      });
++
++      const result = await service.enterWaitingRoom(appointmentId, patientProfileId);
++
++      expect(result.status).toBe('EM_ESPERA');
++      expect(mockPrismaService.appointment.update).toHaveBeenCalledWith({
++        where: { id: appointmentId },
++        data: { status: 'EM_ESPERA' },
++        include: {
++          doctorProfile: { include: { user: true } },
++          patientProfile: true,
++        },
++      });
++    });
++
++    it('should throw NotFoundException if appointment does not belong to patient', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId: 999,
++        status: 'AGENDADA',
++      });
++
++      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({
++        response: { code: 'CONSULTATION_NOT_FOUND' },
++      });
++    });
++
++    it('should throw BadRequestException if status is CANCELADA', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId,
++        status: 'CANCELADA',
++      });
++
++      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({
++        response: { code: 'INVALID_TRANSITION' },
++      });
++    });
++
++    it('should throw BadRequestException if status is not AGENDADA', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId,
++        status: 'EM_ESPERA',
++      });
++
++      await expect(service.enterWaitingRoom(appointmentId, patientProfileId)).rejects.toMatchObject({
++        response: { code: 'INVALID_TRANSITION' },
++      });
++    });
++  });
++
++  describe('markNoShow', () => {
++    const appointmentId = 1;
++    const patientProfileId = 2;
++
++    it('should transition from EM_ESPERA to NAO_REALIZADA', async () => {
++      const appointmentMock = {
++        id: appointmentId,
++        patientProfileId,
++        status: 'EM_ESPERA',
++        doctorProfile: { name: 'Dr. Test', user: { email: 'doctor@test.com' } },
++        patientProfile: { name: 'Paciente Test' },
++      };
++
++      mockPrismaService.appointment.findUnique.mockResolvedValue(appointmentMock);
++      mockPrismaService.appointment.update.mockResolvedValue({
++        ...appointmentMock,
++        status: 'NAO_REALIZADA',
++      });
++
++      const result = await service.markNoShow(appointmentId, patientProfileId);
++
++      expect(result.status).toBe('NAO_REALIZADA');
++      expect(mockPrismaService.appointment.update).toHaveBeenCalledWith({
++        where: { id: appointmentId },
++        data: { status: 'NAO_REALIZADA' },
++      });
++    });
++
++    it('should throw NotFoundException if appointment not found', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue(null);
++
++      await expect(service.markNoShow(appointmentId, patientProfileId)).rejects.toMatchObject({
++        response: { code: 'CONSULTATION_NOT_FOUND' },
++      });
++    });
++
++    it('should throw BadRequestException if status is not EM_ESPERA', async () => {
++      mockPrismaService.appointment.findUnique.mockResolvedValue({
++        id: appointmentId,
++        patientProfileId,
++        status: 'AGENDADA',
++      });
++
++      await expect(service.markNoShow(appointmentId, patientProfileId)).rejects.toMatchObject({
++        response: { code: 'INVALID_TRANSITION' },
++      });
++    });
++  });
+ });
+diff --git a/apps/backend/src/appointment/appointment.service.ts b/apps/backend/src/appointment/appointment.service.ts
+index 4a9e48a..c88360e 100644
+--- a/apps/backend/src/appointment/appointment.service.ts
++++ b/apps/backend/src/appointment/appointment.service.ts
+@@ -1,4 +1,4 @@
+-import { Injectable, BadRequestException, Logger, ForbiddenException } from '@nestjs/common';
++import { Injectable, BadRequestException, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+ import { PrismaService } from '../prisma/prisma.service';
+ import { CreateAppointmentDto } from './dto/create-appointment.dto';
+ import { DomainErrorCode } from '@imnotmedical/shared';
+@@ -20,8 +20,8 @@ export class AppointmentService {
+     if (!year || !month || !day) {
+       throw new BadRequestException('Data inválida. Use o formato YYYY-MM-DD.');
+     }
+-    const queryDate = new Date(year, month - 1, day);
+-    const dayOfWeek = queryDate.getDay();
++    const queryDate = new Date(Date.UTC(year, month - 1, day));
++    const dayOfWeek = queryDate.getUTCDay();
+ 
+     const doctorSlots = await this.prisma.availability.findMany({
+       where: {
+@@ -34,8 +34,8 @@ export class AppointmentService {
+ 
+     if (doctorSlots.length === 0) return [];
+ 
+-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
+-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
++    const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
++    const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+ 
+     const appointments = await this.prisma.appointment.findMany({
+       where: {
+@@ -53,8 +53,8 @@ export class AppointmentService {
+       const [startHours, startMinutes] = slot.startTime.split(':').map(Number);
+       const [endHours, endMinutes] = slot.endTime.split(':').map(Number);
+       
+-      const blockStart = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+-      const blockEnd = new Date(year, month - 1, day, endHours, endMinutes, 0, 0);
++      const blockStart = new Date(Date.UTC(year, month - 1, day, startHours, startMinutes, 0, 0));
++      const blockEnd = new Date(Date.UTC(year, month - 1, day, endHours, endMinutes, 0, 0));
+ 
+       let currentSlotDate = new Date(blockStart);
+ 
+@@ -66,7 +66,7 @@ export class AppointmentService {
+           const slotEndTime = new Date(currentSlotDate.getTime() + (slot.slotDurationMinutes * 60000));
+           
+           const formatTime = (d: Date) => 
+-            `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
++            `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+ 
+           availableSlots.push({
+             startTime: formatTime(currentSlotDate),
+@@ -108,33 +108,38 @@ export class AppointmentService {
+       throw new BadRequestException('Não é possível agendar uma consulta em um horário que já passou.');
+     }
+ 
+-    // Validate that slot is available
+-    const existingAppointment = await this.prisma.appointment.findFirst({
+-      where: {
+-        doctorProfileId,
+-        date: appointmentDate,
+-        status: { not: ConsultationStatus.CANCELADA },
+-      },
+-    });
++    const appointment = await this.prisma.$transaction(async (tx) => {
++      // Row-level lock on the doctor profile to prevent concurrent bookings
++      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorProfileId} FOR UPDATE`;
+ 
+-    if (existingAppointment) {
+-      throw new BadRequestException({
+-        code: DomainErrorCode.SLOT_UNAVAILABLE,
+-        message: 'O horário selecionado não está mais disponível.',
++      // Validate that slot is available
++      const existingAppointment = await tx.appointment.findFirst({
++        where: {
++          doctorProfileId,
++          date: appointmentDate,
++          status: { not: ConsultationStatus.CANCELADA },
++        },
+       });
+-    }
+ 
+-    const appointment = await this.prisma.appointment.create({
+-      data: {
+-        doctorProfileId,
+-        patientProfileId,
+-        date: appointmentDate,
+-        status: ConsultationStatus.AGENDADA,
+-      },
+-      include: {
+-        doctorProfile: { include: { user: true } },
+-        patientProfile: { include: { user: true } },
+-      },
++      if (existingAppointment) {
++        throw new BadRequestException({
++          code: DomainErrorCode.SLOT_UNAVAILABLE,
++          message: 'O horário selecionado não está mais disponível.',
++        });
++      }
++
++      return await tx.appointment.create({
++        data: {
++          doctorProfileId,
++          patientProfileId,
++          date: appointmentDate,
++          status: ConsultationStatus.AGENDADA,
++        },
++        include: {
++          doctorProfile: { include: { user: true } },
++          patientProfile: { include: { user: true } },
++        },
++      });
+     });
+ 
+     this.logger.log('APPOINTMENT CREATED: ' + JSON.stringify(appointment));
+@@ -162,17 +167,8 @@ export class AppointmentService {
+   }
+ 
+   async getDoctorAppointments(doctorProfileId: number) {
+-    const formatter = new Intl.DateTimeFormat('en-US', {
+-      timeZone: 'America/Sao_Paulo',
+-      year: 'numeric',
+-      month: 'numeric',
+-      day: 'numeric',
+-    });
+-    const parts = formatter.formatToParts(new Date());
+-    const year = parseInt(parts.find((p) => p.type === 'year')?.value || '0', 10);
+-    const month = parseInt(parts.find((p) => p.type === 'month')?.value || '0', 10) - 1;
+-    const day = parseInt(parts.find((p) => p.type === 'day')?.value || '0', 10);
+-    const startOfToday = new Date(Date.UTC(year, month, day, 3, 0, 0, 0)); // BRT is UTC-3
++    const now = new Date();
++    const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+ 
+     return this.prisma.appointment.findMany({
+       where: {
+@@ -214,11 +210,11 @@ export class AppointmentService {
+     });
+ 
+     if (!appointment || appointment.patientProfileId !== patientProfileId) {
+-      throw new BadRequestException('Consulta não encontrada.');
++      throw new NotFoundException('Consulta não encontrada.');
+     }
+ 
+     if (appointment.status === ConsultationStatus.CANCELADA) {
+-      throw new BadRequestException('A consulta já está cancelada.');
++      return appointment;
+     }
+ 
+     const twelveHoursInMs = 12 * 60 * 60 * 1000;
+@@ -262,7 +258,7 @@ export class AppointmentService {
+     });
+ 
+     if (!appointment || appointment.patientProfileId !== patientProfileId) {
+-      throw new BadRequestException('Consulta não encontrada.');
++      throw new NotFoundException('Consulta não encontrada.');
+     }
+ 
+     if (appointment.status === ConsultationStatus.CANCELADA || appointment.status === ConsultationStatus.REALIZADA) {
+@@ -279,30 +275,35 @@ export class AppointmentService {
+       throw new BadRequestException('Nova data inválida ou no passado.');
+     }
+ 
+-    // Validate that slot is available
+-    const existingAppointment = await this.prisma.appointment.findFirst({
+-      where: {
+-        doctorProfileId: appointment.doctorProfileId,
+-        date: newDate,
+-        status: { not: ConsultationStatus.CANCELADA },
+-      },
+-    });
++    const oldDate = appointment.date;
+ 
+-    if (existingAppointment) {
+-      throw new BadRequestException({
+-        code: DomainErrorCode.SLOT_UNAVAILABLE,
+-        message: 'O novo horário selecionado não está mais disponível.',
++    // Validate that slot is available
++    const updatedAppointment = await this.prisma.$transaction(async (tx) => {
++      // Row-level lock on the doctor profile
++      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorProfileId} FOR UPDATE`;
++
++      const existingAppointment = await tx.appointment.findFirst({
++        where: {
++          doctorProfileId: appointment.doctorProfileId,
++          date: newDate,
++          status: { not: ConsultationStatus.CANCELADA },
++        },
+       });
+-    }
+ 
+-    const oldDate = appointment.date;
++      if (existingAppointment) {
++        throw new BadRequestException({
++          code: DomainErrorCode.SLOT_UNAVAILABLE,
++          message: 'O novo horário selecionado não está mais disponível.',
++        });
++      }
+ 
+-    const updatedAppointment = await this.prisma.appointment.update({
+-      where: { id: appointmentId },
+-      data: { 
+-        date: newDate,
+-        status: ConsultationStatus.AGENDADA,
+-      },
++      return await tx.appointment.update({
++        where: { id: appointmentId },
++        data: { 
++          date: newDate,
++          status: ConsultationStatus.AGENDADA,
++        },
++      });
+     });
+ 
+     this.logger.log(`APPOINTMENT RESCHEDULED: ${appointmentId} from ${oldDate} to ${newDate}`);
+@@ -334,5 +335,82 @@ export class AppointmentService {
+ 
+     return updatedAppointment;
+   }
++
++  async enterWaitingRoom(appointmentId: number, patientProfileId: number) {
++    const appointment = await this.prisma.appointment.findUnique({
++      where: { id: appointmentId },
++      include: {
++        doctorProfile: { include: { user: true } },
++        patientProfile: true,
++      },
++    });
++
++    if (!appointment || appointment.patientProfileId !== patientProfileId) {
++      throw new NotFoundException({
++        code: DomainErrorCode.CONSULTATION_NOT_FOUND,
++        message: 'Consulta não encontrada.',
++      });
++    }
++
++    if (appointment.status === ConsultationStatus.CANCELADA) {
++      throw new BadRequestException({
++        code: DomainErrorCode.INVALID_TRANSITION,
++        message: 'Não é possível entrar na sala de espera de uma consulta cancelada.',
++      });
++    }
++
++    if (appointment.status !== ConsultationStatus.AGENDADA) {
++      throw new BadRequestException({
++        code: DomainErrorCode.INVALID_TRANSITION,
++        message: `Transição inválida: status atual é '${appointment.status}'. Esperado: 'AGENDADA'.`,
++      });
++    }
++
++    const updatedAppointment = await this.prisma.appointment.update({
++      where: { id: appointmentId },
++      data: { status: ConsultationStatus.EM_ESPERA },
++      include: {
++        doctorProfile: { include: { user: true } },
++        patientProfile: true,
++      },
++    });
++
++    this.logger.log(`WAITING_ROOM_ENTERED: appointment=${appointmentId} patient=${patientProfileId}`);
++
++    return updatedAppointment;
++  }
++
++  async markNoShow(appointmentId: number, patientProfileId: number) {
++    const appointment = await this.prisma.appointment.findUnique({
++      where: { id: appointmentId },
++      include: {
++        doctorProfile: { include: { user: true } },
++        patientProfile: true,
++      },
++    });
++
++    if (!appointment || appointment.patientProfileId !== patientProfileId) {
++      throw new NotFoundException({
++        code: DomainErrorCode.CONSULTATION_NOT_FOUND,
++        message: 'Consulta não encontrada.',
++      });
++    }
++
++    if (appointment.status !== ConsultationStatus.EM_ESPERA) {
++      throw new BadRequestException({
++        code: DomainErrorCode.INVALID_TRANSITION,
++        message: `Transição inválida: status atual é '${appointment.status}'. Esperado: 'EM_ESPERA'.`,
++      });
++    }
++
++    const updatedAppointment = await this.prisma.appointment.update({
++      where: { id: appointmentId },
++      data: { status: ConsultationStatus.NAO_REALIZADA },
++    });
++
++    this.logger.log(`NO_SHOW_MARKED: appointment=${appointmentId} patient=${patientProfileId}`);
++
++    return updatedAppointment;
++  }
+ }
+ 
+diff --git a/apps/frontend/src/app/paciente/sala/[id]/page.tsx b/apps/frontend/src/app/paciente/sala/[id]/page.tsx
+new file mode 100644
+index 0000000..989ce7d
+--- /dev/null
++++ b/apps/frontend/src/app/paciente/sala/[id]/page.tsx
+@@ -0,0 +1,385 @@
++// Endereço: apps/frontend/src/app/paciente/sala/[id]/page.tsx
++'use client';
++
++import { useEffect, useState, useRef, useCallback } from 'react';
++import { useParams, useRouter } from 'next/navigation';
++import { api } from '@/services/api';
++import { useAuth } from '@/contexts/AuthProvider';
++import { Spinner } from '@/components/Spinner';
++import {
++  Clock,
++  ShieldCheck,
++  UserCheck,
++  AlertTriangle,
++  CalendarClock,
++  Stethoscope,
++  Loader2,
++} from 'lucide-react';
++
++interface AppointmentInfo {
++  id: number;
++  date: string;
++  status: string;
++  doctorProfile: {
++    name: string;
++    specialty: string;
++  };
++}
++
++const NARRATIVE_MESSAGES = [
++  'Conectando ao servidor médico seguro…',
++  'Estabelecendo canal criptografado…',
++  'Notificando Dr(a). {doctorName}…',
++  'Aguardando liberação da sala pelo profissional…',
++  'Verificando disponibilidade da sala de atendimento…',
++  'Sua consulta está na fila de espera segura…',
++];
++
++const NO_SHOW_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
++const MESSAGE_CYCLE_MS = 5000; // 5 seconds
++
++type WaitingRoomState = 'loading' | 'waiting' | 'no-show' | 'error';
++
++export default function VirtualWaitingRoomPage() {
++  const params = useParams();
++  const router = useRouter();
++  const { user, loading: authLoading } = useAuth();
++  const appointmentId = Number(params?.id);
++
++  const [state, setState] = useState<WaitingRoomState>('loading');
++  const [appointment, setAppointment] = useState<AppointmentInfo | null>(null);
++  const [errorMessage, setErrorMessage] = useState('');
++  const [narrativeIndex, setNarrativeIndex] = useState(0);
++
++  // Refs to prevent double-execution and ensure cleanup
++  const hasEnteredWaitingRoom = useRef(false);
++  const noShowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
++  const messageCycleRef = useRef<ReturnType<typeof setInterval> | null>(null);
++
++  // Cleanup all timers on unmount
++  const cleanupTimers = useCallback(() => {
++    if (noShowTimeoutRef.current) {
++      clearTimeout(noShowTimeoutRef.current);
++      noShowTimeoutRef.current = null;
++    }
++    if (messageCycleRef.current) {
++      clearInterval(messageCycleRef.current);
++      messageCycleRef.current = null;
++    }
++  }, []);
++
++  // Initialize: load appointment and enter waiting room
++  useEffect(() => {
++    if (authLoading) return;
++    if (!user) {
++      router.push('/login');
++      return;
++    }
++    if (user.role !== 'PATIENT') {
++      router.push('/');
++      return;
++    }
++    if (isNaN(appointmentId)) {
++      setErrorMessage('ID de consulta inválido.');
++      setState('error');
++      return;
++    }
++
++    let active = true;
++
++    const initWaitingRoom = async () => {
++      try {
++        // 1. Fetch appointment details
++        const response = await api.get('/appointments/patient');
++        if (!active) return;
++
++        const found = response.data.find(
++          (a: AppointmentInfo) => a.id === appointmentId
++        );
++
++        if (!found) {
++          setErrorMessage('Consulta não encontrada.');
++          setState('error');
++          return;
++        }
++
++        setAppointment(found);
++
++        // 2. Enter waiting room (PATCH) — only once
++        if (!hasEnteredWaitingRoom.current) {
++          hasEnteredWaitingRoom.current = true;
++          try {
++            await api.patch(`/appointments/${appointmentId}/waiting-room`);
++          } catch (err: any) {
++            if (!active) return;
++            const code = err.response?.data?.code;
++            // If INVALID_TRANSITION, the appointment may already be in EM_ESPERA
++            // (page reload scenario) — allow continuing
++            if (code === 'INVALID_TRANSITION' && found.status === 'EM_ESPERA') {
++              // Already in waiting room, continue
++            } else {
++              setErrorMessage(
++                err.response?.data?.message || 'Erro ao entrar na sala de espera.'
++              );
++              setState('error');
++              return;
++            }
++          }
++        }
++
++        if (!active) return;
++        setState('waiting');
++      } catch {
++        if (active) {
++          setErrorMessage('Erro ao carregar dados da consulta.');
++          setState('error');
++        }
++      }
++    };
++
++    initWaitingRoom();
++
++    return () => {
++      active = false;
++    };
++  }, [authLoading, user, appointmentId, router]);
++
++  // Narrative message cycling
++  useEffect(() => {
++    if (state !== 'waiting') return;
++
++    messageCycleRef.current = setInterval(() => {
++      setNarrativeIndex((prev) => (prev + 1) % NARRATIVE_MESSAGES.length);
++    }, MESSAGE_CYCLE_MS);
++
++    return () => {
++      if (messageCycleRef.current) {
++        clearInterval(messageCycleRef.current);
++        messageCycleRef.current = null;
++      }
++    };
++  }, [state]);
++
++  // No-show timeout (10 min)
++  useEffect(() => {
++    if (state !== 'waiting') return;
++
++    noShowTimeoutRef.current = setTimeout(async () => {
++      try {
++        await api.patch(`/appointments/${appointmentId}/no-show`);
++      } catch {
++        // Even if the backend call fails, show the no-show UI
++      }
++      setState('no-show');
++    }, NO_SHOW_TIMEOUT_MS);
++
++    return () => {
++      if (noShowTimeoutRef.current) {
++        clearTimeout(noShowTimeoutRef.current);
++        noShowTimeoutRef.current = null;
++      }
++    };
++  }, [state, appointmentId]);
++
++  // Cleanup all timers on unmount
++  useEffect(() => {
++    return cleanupTimers;
++  }, [cleanupTimers]);
++
++  const doctorName = appointment?.doctorProfile?.name || 'Médico';
++  const specialty = appointment?.doctorProfile?.specialty || '';
++
++  const getCurrentNarrativeMessage = () => {
++    return NARRATIVE_MESSAGES[narrativeIndex].replace('{doctorName}', doctorName);
++  };
++
++  const appointmentDate = appointment
++    ? new Date(appointment.date).toLocaleDateString('pt-BR', {
++        day: '2-digit',
++        month: 'long',
++        year: 'numeric',
++        hour: '2-digit',
++        minute: '2-digit',
++      })
++    : '';
++
++  // --- LOADING ---
++  if (authLoading || state === 'loading') {
++    return (
++      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
++        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
++        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
++          Preparando sala de espera…
++        </p>
++      </div>
++    );
++  }
++
++  // --- ERROR ---
++  if (state === 'error') {
++    return (
++      <div className="max-w-lg mx-auto mt-12 px-4">
++        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center shadow-sm">
++          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
++            <AlertTriangle className="w-8 h-8 text-rose-500" />
++          </div>
++          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
++            Erro
++          </h2>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
++            {errorMessage}
++          </p>
++          <button
++            type="button"
++            id="btn-back-to-appointments"
++            onClick={() => router.push('/paciente/consultas')}
++            className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl transition-colors"
++          >
++            Voltar às Consultas
++          </button>
++        </div>
++      </div>
++    );
++  }
++
++  // --- NO-SHOW (Doctor absence timeout) ---
++  if (state === 'no-show') {
++    return (
++      <div className="max-w-lg mx-auto mt-12 px-4">
++        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 md:p-10 text-center shadow-lg">
++          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shadow-inner">
++            <Clock className="w-10 h-10 text-amber-500" />
++          </div>
++          <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-3">
++            Consulta Não Iniciada
++          </h2>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 leading-relaxed max-w-md mx-auto">
++            O médico não pôde iniciar a consulta no momento.
++          </p>
++          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed max-w-md mx-auto">
++            Lamentamos o inconveniente. Deseja reagendar sua consulta?
++          </p>
++          <button
++            type="button"
++            id="btn-reschedule-appointment"
++            onClick={() => router.push('/paciente/consultas')}
++            className="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-teal-600/20 hover:shadow-teal-500/30 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
++          >
++            <CalendarClock className="w-5 h-5" />
++            Reagendar Consulta
++          </button>
++        </div>
++      </div>
++    );
++  }
++
++  // --- WAITING ---
++  return (
++    <div className="max-w-2xl mx-auto mt-6 px-4 pb-12">
++      {/* Page Header */}
++      <div className="mb-8">
++        <div className="flex items-center gap-3 mb-2">
++          <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center">
++            <Stethoscope className="w-5 h-5 text-teal-600 dark:text-teal-400" />
++          </div>
++          <div>
++            <h1 className="text-2xl font-black text-slate-800 dark:text-white">
++              Sala de Espera Virtual
++            </h1>
++            <p className="text-sm text-slate-500 dark:text-slate-400">
++              Aguardando início da consulta
++            </p>
++          </div>
++        </div>
++      </div>
++
++      {/* Doctor Info Card */}
++      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 md:p-8 shadow-sm mb-6">
++        <div className="flex items-center gap-4 mb-6">
++          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
++            <Stethoscope className="w-7 h-7 text-white" />
++          </div>
++          <div>
++            <h2 className="text-lg font-bold text-slate-800 dark:text-white">
++              Dr(a). {doctorName}
++            </h2>
++            {specialty && (
++              <p className="text-sm text-teal-600 dark:text-teal-400 font-medium">
++                {specialty}
++              </p>
++            )}
++          </div>
++        </div>
++
++        {appointmentDate && (
++          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 rounded-xl px-4 py-3 border border-slate-100 dark:border-slate-800/60">
++            <CalendarClock className="w-4 h-4 text-slate-400" />
++            <span>{appointmentDate}</span>
++          </div>
++        )}
++      </div>
++
++      {/* Waiting Status Card */}
++      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 md:p-8 shadow-sm mb-6">
++        {/* Spinner + Narrative Loading */}
++        <div className="flex flex-col items-center gap-6">
++          <div className="relative">
++            <div className="w-16 h-16 rounded-full bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center">
++              <Spinner />
++            </div>
++            {/* Pulse ring animation */}
++            <div className="absolute inset-0 rounded-full border-2 border-teal-400/30 animate-ping" />
++          </div>
++
++          {/* Narrative Loading Message */}
++          <div
++            aria-live="polite"
++            aria-atomic="true"
++            className="text-center min-h-[2rem] flex items-center justify-center"
++          >
++            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 transition-opacity duration-500">
++              {getCurrentNarrativeMessage()}
++            </p>
++          </div>
++        </div>
++      </div>
++
++      {/* Status Indicators */}
++      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
++        {/* Doctor Notified */}
++        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
++          <div className="flex items-center gap-3">
++            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
++              <UserCheck className="w-5 h-5 text-emerald-500" />
++            </div>
++            <div>
++              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
++                Médico Notificado
++              </p>
++              <p className="text-xs text-slate-400 dark:text-slate-500">
++                Dr(a). {doctorName} foi informado(a)
++              </p>
++            </div>
++          </div>
++        </div>
++
++        {/* Secure Queue */}
++        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
++          <div className="flex items-center gap-3">
++            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
++              <ShieldCheck className="w-5 h-5 text-blue-500" />
++            </div>
++            <div>
++              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
++                Fila Segura
++              </p>
++              <p className="text-xs text-slate-400 dark:text-slate-500">
++                Sua posição na fila está garantida
++              </p>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/packages/shared/src/__tests__/consultation-status.spec.ts b/packages/shared/src/__tests__/consultation-status.spec.ts
+new file mode 100644
+index 0000000..911eaa7
+--- /dev/null
++++ b/packages/shared/src/__tests__/consultation-status.spec.ts
+@@ -0,0 +1,17 @@
++import { ConsultationStatus } from '../enums/consultation-status';
++
++describe('ConsultationStatus', () => {
++  it('should export all expected consultation statuses', () => {
++    expect(ConsultationStatus.AGENDADA).toBe('AGENDADA');
++    expect(ConsultationStatus.CANCELADA).toBe('CANCELADA');
++    expect(ConsultationStatus.REALIZADA).toBe('REALIZADA');
++    expect(ConsultationStatus.EM_ESPERA).toBe('EM_ESPERA');
++    expect(ConsultationStatus.EM_ANDAMENTO).toBe('EM_ANDAMENTO');
++    expect(ConsultationStatus.NAO_REALIZADA).toBe('NAO_REALIZADA');
++  });
++
++  it('should have exactly 6 statuses', () => {
++    const values = Object.values(ConsultationStatus);
++    expect(values).toHaveLength(6);
++  });
++});
+diff --git a/packages/shared/src/enums/consultation-status.ts b/packages/shared/src/enums/consultation-status.ts
+new file mode 100644
+index 0000000..b5e328b
+--- /dev/null
++++ b/packages/shared/src/enums/consultation-status.ts
+@@ -0,0 +1,8 @@
++export enum ConsultationStatus {
++  AGENDADA = 'AGENDADA',
++  CANCELADA = 'CANCELADA',
++  REALIZADA = 'REALIZADA',
++  EM_ESPERA = 'EM_ESPERA',
++  EM_ANDAMENTO = 'EM_ANDAMENTO',
++  NAO_REALIZADA = 'NAO_REALIZADA',
++}
+diff --git a/packages/shared/src/index.ts b/packages/shared/src/index.ts
+index 894ab8d..650d1a4 100644
+--- a/packages/shared/src/index.ts
++++ b/packages/shared/src/index.ts
+@@ -1 +1,2 @@
+ export * from './errors/domain-error-code';
++export * from './enums/consultation-status';

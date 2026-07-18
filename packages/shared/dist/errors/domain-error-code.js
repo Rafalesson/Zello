@@ -8,5 +8,6 @@ var DomainErrorCode;
     DomainErrorCode["SLOT_UNAVAILABLE"] = "SLOT_UNAVAILABLE";
     DomainErrorCode["DEVICE_PERMISSION_DENIED"] = "DEVICE_PERMISSION_DENIED";
     DomainErrorCode["UNAUTHORIZED_ROOM_ACCESS"] = "UNAUTHORIZED_ROOM_ACCESS";
+    DomainErrorCode["VALIDATION_ERROR"] = "VALIDATION_ERROR";
 })(DomainErrorCode || (exports.DomainErrorCode = DomainErrorCode = {}));
 //# sourceMappingURL=domain-error-code.js.map

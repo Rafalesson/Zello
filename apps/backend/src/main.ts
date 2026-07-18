@@ -1,4 +1,4 @@
-﻿import { config as loadEnv } from 'dotenv';
+import { config as loadEnv } from 'dotenv';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
@@ -133,7 +133,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
     }),
   );
 

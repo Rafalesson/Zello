@@ -234,7 +234,7 @@ function MedicosContent() {
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 sticky top-24">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-700">
                   <span className="flex items-center gap-2 font-extrabold text-slate-900 dark:text-slate-100 text-sm uppercase tracking-wider">
-                    <SlidersHorizontal className="h-4.5 w-4.5 text-teal-650 dark:text-teal-400" />
+                    <SlidersHorizontal className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
                     Filtros de Busca
                   </span>
                   <button 
@@ -299,7 +299,7 @@ function MedicosContent() {
                           type="checkbox"
                           checked={onlyTelehealth}
                           onChange={(e) => setOnlyTelehealth(e.target.checked)}
-                          className="h-4.5 w-4.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:border-slate-650 dark:bg-slate-900 cursor-pointer"
+                          className="h-4.5 w-4.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
                         />
                         <span className="group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Teleconsulta (Online)</span>
                       </label>
@@ -308,7 +308,7 @@ function MedicosContent() {
                           type="checkbox"
                           checked={onlyInPerson}
                           onChange={(e) => setOnlyInPerson(e.target.checked)}
-                          className="h-4.5 w-4.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:border-slate-650 dark:bg-slate-900 cursor-pointer"
+                          className="h-4.5 w-4.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
                         />
                         <span className="group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Atendimento Presencial</span>
                       </label>
@@ -395,8 +395,8 @@ function MedicosContent() {
                 </div>
               ) : sortedDoctors.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-800/40">
-                  <h3 className="text-lg font-bold text-slate-850 dark:text-white">Nenhum médico encontrado</h3>
-                  <p className="mt-2 text-sm text-slate-450 dark:text-slate-400 max-w-sm mx-auto">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white">Nenhum médico encontrado</h3>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                     Experimente alterar ou limpar os filtros na barra lateral para encontrar outros profissionais disponíveis.
                   </p>
                   <button 
