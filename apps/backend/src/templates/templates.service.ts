@@ -241,7 +241,7 @@ const allTemplates = {
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 16/10/2026 às 14:30:23</p>
+              <p>Emitido em 16/10/2026 às 14:30:20</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
