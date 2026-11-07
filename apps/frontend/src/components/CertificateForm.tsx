@@ -11,7 +11,9 @@ import { resolvePdfUrl } from '@/utils/resolvePdfUrl';
 import { DefaultTemplate } from './templates/default';
 import { ModernTemplate } from './templates/modern'; 
 import { ClassicTemplate } from './templates/classic';
-import { CheckCircle, Download, Home, Loader2 } from 'lucide-react';
+import { InstitutionalTemplate } from './templates/institutional';
+import { ExecutiveTemplate } from './templates/executive';
+import { CheckCircle, Download, Home, Loader2, UserCheck } from 'lucide-react';
 
 type Cid = { id: string; code: string; description: string; };
 
@@ -23,6 +25,10 @@ const ActiveTemplatePreview = () => {
       return <ModernTemplate />;
     case 'classic':
       return <ClassicTemplate />;
+    case 'institutional':
+      return <InstitutionalTemplate />;
+    case 'executive':
+      return <ExecutiveTemplate />;
     default:
       return <DefaultTemplate />;
   }
@@ -89,6 +95,18 @@ export function CertificateForm() {
         durationInDays: Number(data.durationInDays),
         cidCode: data.cid?.code,
         templateId: data.templateId,
+        legalRepresentative:
+          data.hasLegalRepresentative && data.legalRepresentative.trim().length > 0
+            ? data.legalRepresentative.trim()
+            : undefined,
+        legalRepresentativeCpf:
+          data.hasLegalRepresentative && data.legalRepresentativeCpf.trim().length > 0
+            ? data.legalRepresentativeCpf.trim()
+            : undefined,
+        signatureStyle:
+          data.signatureStyle && data.signatureStyle !== 'auto'
+            ? data.signatureStyle
+            : undefined,
       };
 
       const response = await api.post('/certificates', dto);
@@ -114,6 +132,14 @@ export function CertificateForm() {
     router.push('/dashboard');
   }
 
+  function formatCpfMask(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  }
+
   return (
     <>
       <form onSubmit={handlePreview} className="space-y-6">
@@ -131,6 +157,100 @@ export function CertificateForm() {
           )}
           displayValue={(patient) => patient.name}
         />
+
+        <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-4 transition-colors">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="hasLegalRepresentative"
+              className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer select-none"
+            >
+              <UserCheck className="h-4 w-4 text-blue-600" />
+              <span>Incluir Representante Legal no Atestado</span>
+            </label>
+            <button
+              type="button"
+              id="hasLegalRepresentative"
+              role="switch"
+              aria-checked={data.hasLegalRepresentative}
+              onClick={() =>
+                setData({
+                  ...data,
+                  hasLegalRepresentative: !data.hasLegalRepresentative,
+                  legalRepresentative: !data.hasLegalRepresentative ? data.legalRepresentative : '',
+                  legalRepresentativeCpf: !data.hasLegalRepresentative ? data.legalRepresentativeCpf : '',
+                })
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                data.hasLegalRepresentative ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  data.hasLegalRepresentative ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label
+                htmlFor="legalRepresentative"
+                className={`mb-1.5 block text-xs font-medium ${
+                  data.hasLegalRepresentative ? 'text-gray-700' : 'text-gray-400'
+                }`}
+              >
+                Nome completo do Representante Legal / Responsável
+              </label>
+              <input
+                type="text"
+                id="legalRepresentative"
+                disabled={!data.hasLegalRepresentative}
+                required={data.hasLegalRepresentative}
+                placeholder={
+                  data.hasLegalRepresentative
+                    ? 'Digite o nome completo do representante legal...'
+                    : 'Ative a opção acima caso o paciente possua representante legal'
+                }
+                value={data.legalRepresentative}
+                onChange={(e) => setData({ ...data, legalRepresentative: e.target.value })}
+                className={`w-full rounded-md border p-3 text-sm transition-colors focus:outline-none ${
+                  data.hasLegalRepresentative
+                    ? 'border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-300'
+                    : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="legalRepresentativeCpf"
+                className={`mb-1.5 block text-xs font-medium ${
+                  data.hasLegalRepresentative ? 'text-gray-700' : 'text-gray-400'
+                }`}
+              >
+                CPF do Representante Legal
+              </label>
+              <input
+                type="text"
+                id="legalRepresentativeCpf"
+                disabled={!data.hasLegalRepresentative}
+                required={data.hasLegalRepresentative}
+                maxLength={14}
+                placeholder={data.hasLegalRepresentative ? '000.000.000-00' : 'CPF desativado'}
+                value={data.legalRepresentativeCpf}
+                onChange={(e) =>
+                  setData({ ...data, legalRepresentativeCpf: formatCpfMask(e.target.value) })
+                }
+                className={`w-full rounded-md border p-3 text-sm transition-colors focus:outline-none ${
+                  data.hasLegalRepresentative
+                    ? 'border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-300'
+                    : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              />
+            </div>
+          </div>
+        </div>
 
         <div>
           <label htmlFor="purpose" className="mb-2 block text-sm font-medium text-gray-700">Finalidade do Atestado</label>
@@ -159,7 +279,7 @@ export function CertificateForm() {
           displayValue={(cid) => `${cid.code} - ${cid.description}`}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label htmlFor="durationInDays" className="mb-2 block text-sm font-medium text-gray-700">Duração (em dias)</label>
             <input 
@@ -185,6 +305,26 @@ export function CertificateForm() {
               <option value="default">Padrão</option>
               <option value="modern">Moderno</option>
               <option value="classic">Clássico</option>
+              <option value="institutional">Institucional (Hospitalar)</option>
+              <option value="executive">Executivo (Clínico)</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="signatureStyle" className="mb-2 block text-sm font-medium text-gray-700">
+              Selo de Assinatura Eletrônica
+            </label>
+            <select
+              id="signatureStyle"
+              value={data.signatureStyle}
+              onChange={(e) => setData({ ...data, signatureStyle: e.target.value })}
+              className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+            >
+              <option value="auto">Automático (Padrão do Modelo)</option>
+              <option value="icp_cfm">Selo Institucional ICP-Brasil | e-CRM</option>
+              <option value="rubrica_crm">Rubrica Médica + Selo ICP-Brasil / CFM</option>
+              <option value="gov_iti">Selo Criptográfico Escuro (ITI • CFM)</option>
+              <option value="classic_icp">Selo Clássico Azul ICP-Brasil</option>
             </select>
           </div>
         </div>

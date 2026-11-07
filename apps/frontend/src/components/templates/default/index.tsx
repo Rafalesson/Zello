@@ -3,9 +3,9 @@
 
 import { useContext } from 'react'; 
 import { AuthContext } from '@/contexts/AuthProvider';
-import { useAttestation } from '@/contexts/AttestationContext';
+import { useAttestation, resolveSignatureImage } from '@/contexts/AttestationContext';
 import styles from './style.module.css';
-import { calculateAge } from '@/utils/date';
+import { calculateAge, numberToWords } from '@/utils/date';
 import Image from 'next/image';
 
 export function DefaultTemplate() {
@@ -16,7 +16,20 @@ export function DefaultTemplate() {
     return <div className="p-8 text-center text-red-600">Faltam dados para gerar o preview.</div>;
   }
 
-  const { patient, purpose, durationInDays, cid } = attestationData;
+  const {
+    patient,
+    purpose,
+    durationInDays,
+    cid,
+    hasLegalRepresentative,
+    legalRepresentative,
+    legalRepresentativeCpf,
+    signatureStyle,
+    templateId,
+  } = attestationData;
+  const activeLegalRep = hasLegalRepresentative && legalRepresentative.trim().length > 0 ? legalRepresentative.trim() : null;
+  const activeLegalRepCpf = hasLegalRepresentative && legalRepresentativeCpf.trim().length > 0 ? legalRepresentativeCpf.trim() : null;
+  const signatureImgSrc = resolveSignatureImage(signatureStyle, templateId);
   const { name: doctorName, crm: doctorCrm, specialty, address, phone } = user.doctorProfile;
   
   // MODIFICAÇÃO: Adicionada verificação para evitar passar 'undefined' para a função
@@ -48,9 +61,18 @@ export function DefaultTemplate() {
   return (
     <div className={styles.certificateBody}>
       <header className={styles.header}>
-        <h2 className={styles.doctorName}>{doctorName}</h2>
-        <p className={styles.doctorDetails}>{specialty || 'Clínico Geral'} | CRM {doctorCrm}</p>
-        <p className={styles.doctorDetails}>{formattedDoctorAddress} | {phone}</p>
+        <Image
+          src="/cfm-header.png"
+          alt="Logotipo do Conselho Federal de Medicina"
+          width={150}
+          height={52}
+          className={styles.cfmHeader}
+        />
+        <div className={styles.headerDoctor}>
+          <h2 className={styles.doctorName}>{doctorName}</h2>
+          <p className={styles.doctorDetails}>{specialty || 'Clínico Geral'} | CRM {doctorCrm}</p>
+          <p className={styles.doctorDetails}>{formattedDoctorAddress} | {phone || 'Contato não informado'}</p>
+        </div>
       </header>
       <main>
         <section className={styles.title}>
@@ -66,24 +88,38 @@ export function DefaultTemplate() {
             <span><strong>Sexo:</strong> {patientSex}</span>
           </div>
         </section>
+        {activeLegalRep && (
+          <section className={`${styles.patientInfo} ${styles.legalRepBox}`}>
+            <div className={styles.patientDetailGroup}>
+              <span><strong>Representante Legal:</strong> {activeLegalRep}</span>
+            </div>
+            <div className={styles.patientDetailGroup}>
+              <span><strong>CPF do Representante:</strong> {activeLegalRepCpf || 'Não informado'}</span>
+            </div>
+          </section>
+        )}
         <section className={styles.content}>
           <p>
             Atesto, para os devidos fins, que o(a) paciente
             <strong> {patient.name}</strong>, portador(a) do CPF nº
-            <strong> {patient.cpf}</strong>, esteve sob meus cuidados
+            <strong> {patient.cpf}</strong>
+            {activeLegalRep && (
+              <>, representado(a) legalmente por <strong>{activeLegalRep}</strong>{activeLegalRepCpf ? `, inscrito(a) no CPF nº ` : ''}{activeLegalRepCpf && <strong>{activeLegalRepCpf}</strong>}</>
+            )}
+            , esteve sob meus cuidados
             profissionais na presente data, necessitando de
-            <strong> {durationInDays} ({'um'}) dia(s)</strong> de
+            <strong> {durationInDays} ({numberToWords(durationInDays)}) dia(s)</strong> de
             afastamento de suas atividades laborais/outras, a partir de
             <strong> {startDate}</strong>.
           </p>
           <p><strong>Finalidade:</strong> {purpose}</p>
-          {cid && <p><strong>CID-10:</strong> {cid.code} - {cid.description}</p>}
+          <p><strong>CID-10:</strong> {cid ? `${cid.code} - ${cid.description}` : 'Não informado'}</p>
         </section>
       </main>
       <footer className={styles.footer}>
         <div>
           <p>Emitido em {issueDateTime}</p>
-          <p id={styles.footerP2}>
+          <p className={styles.footerP2}>
             Atendimento realizado via telemedicina, conforme MP nº 2.200-2/2001,
             <br />
             Resolução Nº CFM 2.299/2021, Resolução CFM Nº 2.381/2024 e Resolução
@@ -97,10 +133,10 @@ export function DefaultTemplate() {
         </div>
         <div className={styles.containerImg}>
           <Image
-            src="/assinatura_img.jpeg"
+            src={signatureImgSrc}
             alt="Imagem da assinatura eletronica"
-            width={200}
-            height={60}
+            width={220}
+            height={78}
             className={styles.icpImg}
           />
         </div>

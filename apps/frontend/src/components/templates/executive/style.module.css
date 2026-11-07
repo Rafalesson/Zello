@@ -1,0 +1,224 @@
+/* Endereço: apps/frontend/src/components/templates/executive/style.module.css */
+
+.execContainer {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  background-color: #fff;
+  color: #0f172a;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.execHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0f766e;
+  gap: 1rem;
+}
+
+.execBrand {
+  display: flex;
+  align-items: center;
+}
+
+.cfmHeader {
+  width: 175px;
+  height: auto;
+  max-height: 64px;
+  object-fit: contain;
+}
+
+.execDoctor {
+  text-align: right;
+  border-right: 3px solid #0f766e;
+  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doctorName {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.doctorSpec {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.doctorContact {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.execMain {
+  padding-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.execTitleBlock {
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.execTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 1.2px;
+}
+
+.execSubtitle {
+  margin: 3px 0 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.execCard {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.execCardHeader {
+  background-color: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  color: #0f766e;
+  text-transform: uppercase;
+}
+
+.execPatientGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+}
+
+.execCell {
+  padding: 0.6rem 0.85rem;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.execCell:nth-child(2n) {
+  border-right: none;
+}
+
+.execCell:last-child,
+.execCell:nth-last-child(2):nth-child(odd) {
+  border-bottom: none;
+}
+
+.execCellFull {
+  grid-column: 1 / -1;
+  border-top: 1px solid #e2e8f0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.execLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+.execVal {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.execStatementBox {
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #0f766e;
+  background-color: #f8fafc;
+  padding: 0.85rem 1.15rem;
+  border-radius: 4px;
+}
+
+.execStatementHeader {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  color: #0f766e;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.execStatement {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.75;
+  text-align: justify;
+  color: #1e293b;
+}
+
+.footer {
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #cbd5e1;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.containerImg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.65rem;
+}
+
+.signatureContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icpImg {
+  width: 170px;
+  height: auto;
+  object-fit: contain;
+}
+
+.execFooterText {
+  padding: 0.25rem 0.5rem;
+}
+
+.execFooterText p {
+  margin: 3px 0;
+  line-height: 1.4;
+}
+
+.execIssued {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.footerP2 {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 5px;
+  margin-top: 5px;
+}

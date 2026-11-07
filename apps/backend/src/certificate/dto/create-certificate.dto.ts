@@ -41,4 +41,16 @@ export class CreateCertificateDto {
   @IsOptional()
   @IsString()
   templateId?: string;
+
+  @IsOptional()
+  @IsString()
+  legalRepresentative?: string;
+
+  @IsOptional()
+  @IsString()
+  legalRepresentativeCpf?: string;
+
+  @IsOptional()
+  @IsString()
+  signatureStyle?: string;
 }

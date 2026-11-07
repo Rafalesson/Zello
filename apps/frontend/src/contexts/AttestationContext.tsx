@@ -23,7 +23,37 @@ export type AttestationData = {
   purpose: string;
   durationInDays: number | '';
   templateId: string;
+  hasLegalRepresentative: boolean;
+  legalRepresentative: string;
+  legalRepresentativeCpf: string;
+  signatureStyle: string;
 };
+
+export function resolveSignatureImage(signatureStyle: string, templateId: string): string {
+  switch (signatureStyle) {
+    case 'icp_cfm':
+      return '/assinatura_icp_cfm.png';
+    case 'rubrica_crm':
+      return '/assinatura_rubrica_crm.png';
+    case 'gov_iti':
+      return '/assinatura_gov_iti.png';
+    case 'classic_icp':
+      return '/assinatura_img.jpeg';
+    default:
+      switch (templateId) {
+        case 'modern':
+          return '/assinatura_rubrica_crm.png';
+        case 'institutional':
+          return '/assinatura_gov_iti.png';
+        case 'classic':
+          return '/assinatura_img.jpeg';
+        case 'executive':
+        case 'default':
+        default:
+          return '/assinatura_icp_cfm.png';
+      }
+  }
+}
 
 // Tipo para o valor do nosso contexto
 type AttestationContextType = {
@@ -39,6 +69,10 @@ const initialState: AttestationData = {
   purpose: '',
   durationInDays: 1,
   templateId: 'default',
+  hasLegalRepresentative: false,
+  legalRepresentative: '',
+  legalRepresentativeCpf: '',
+  signatureStyle: 'auto',
 };
 
 // Criamos o contexto com um valor padrão

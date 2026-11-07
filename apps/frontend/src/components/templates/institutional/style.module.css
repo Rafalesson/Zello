@@ -1,0 +1,298 @@
+/* Endereço: apps/frontend/src/components/templates/institutional/style.module.css */
+
+.instPage {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #1e293b;
+  background-color: #fff;
+  border: 1px solid #cbd5e1;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.instTopBar {
+  height: 6px;
+  background: linear-gradient(90deg, #0f172a 0%, #1d4ed8 100%);
+  margin: 0 -1.5rem 1.25rem -1.5rem;
+}
+
+.instHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0f172a;
+}
+
+.cfmHeader {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+}
+
+.instDoctorBox {
+  text-align: right;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-right: 4px solid #1d4ed8;
+  padding: 0.65rem 0.9rem;
+  border-radius: 4px;
+}
+
+.instBoxTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #1d4ed8;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.doctorName {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.doctorMeta {
+  margin: 2px 0 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.doctorContact {
+  margin: 2px 0 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.instTitleBanner {
+  background-color: #0f172a;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  margin: 1.25rem 0;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.instTitleBanner h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.instProtocol {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  letter-spacing: 0.8px;
+}
+
+.instMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.instSection {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.instSectionHeader {
+  background-color: #f1f5f9;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #334155;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.instPatientGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.instCell {
+  padding: 0.65rem 0.85rem;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.instCell:nth-child(2n) {
+  border-right: none;
+}
+
+.instCell:nth-child(3),
+.instCell:nth-child(4) {
+  border-bottom: none;
+}
+
+.instRepGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  border-top: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.instRepGrid .instCell {
+  border-bottom: none;
+}
+
+.instRepGrid .instCell:last-child {
+  border-right: none;
+}
+
+.instLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.instValue {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.instDeclarationBox {
+  padding: 1rem 1.15rem;
+  background-color: #fff;
+}
+
+.instDeclarationBox p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  text-align: justify;
+  color: #1e293b;
+}
+
+.instMetaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.instMetaCard {
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #1d4ed8;
+  border-radius: 5px;
+  padding: 0.75rem 1rem;
+  background-color: #f8fafc;
+}
+
+.instSignBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 1.75rem;
+}
+
+.instSignLine {
+  width: 16rem;
+  border-top: 1.2px solid #0f172a;
+  margin-bottom: 0.4rem;
+}
+
+.instSignName {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.instSignMeta {
+  margin: 2px 0 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.instSignNote {
+  margin: 2px 0 0 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.8px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.instMetaText {
+  margin: 4px 0 0 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-top: 2px solid #0f172a;
+  padding-top: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #475569;
+  text-align: left;
+}
+
+.footerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 65%;
+}
+
+.footerIssued {
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.footerP2 {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 6px;
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+.footerValidation {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.containerImg {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.signatureContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icpImg {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+}
+

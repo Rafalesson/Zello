@@ -8,6 +8,9 @@ export interface CertificateData {
   patientCpf: string;
   patientAge: string;
   patientSex?: string | null;
+  legalRepresentative?: string | null;
+  legalRepresentativeCpf?: string | null;
+  signatureStyle?: string | null;
   durationInDays: number;
   durationInWords: string;
   startDate: string;

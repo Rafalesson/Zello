@@ -35,6 +35,19 @@ export default function PreviewPage() {
       purpose: formData.purpose,
       durationInDays: formData.durationInDays,
       cidCode: formData.cid?.code,
+      templateId: formData.templateId,
+      legalRepresentative:
+        formData.hasLegalRepresentative && formData.legalRepresentative.trim().length > 0
+          ? formData.legalRepresentative.trim()
+          : undefined,
+      legalRepresentativeCpf:
+        formData.hasLegalRepresentative && formData.legalRepresentativeCpf.trim().length > 0
+          ? formData.legalRepresentativeCpf.trim()
+          : undefined,
+      signatureStyle:
+        formData.signatureStyle && formData.signatureStyle !== 'auto'
+          ? formData.signatureStyle
+          : undefined,
     };
 
     setIsSubmitting(true);
@@ -60,6 +73,19 @@ export default function PreviewPage() {
       purpose: formData.purpose,
       durationInDays: formData.durationInDays,
       cidCode: formData.cid?.code,
+      templateId: formData.templateId,
+      legalRepresentative:
+        formData.hasLegalRepresentative && formData.legalRepresentative.trim().length > 0
+          ? formData.legalRepresentative.trim()
+          : undefined,
+      legalRepresentativeCpf:
+        formData.hasLegalRepresentative && formData.legalRepresentativeCpf.trim().length > 0
+          ? formData.legalRepresentativeCpf.trim()
+          : undefined,
+      signatureStyle:
+        formData.signatureStyle && formData.signatureStyle !== 'auto'
+          ? formData.signatureStyle
+          : undefined,
     };
 
     const fetchPreview = async () => {

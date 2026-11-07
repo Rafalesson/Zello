@@ -72,6 +72,14 @@
     margin: 0;
     font-size: 1rem;
 }
+.detailInlineMeta {
+    display: inline !important;
+    text-transform: none !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    color: #4b5563 !important;
+    margin-bottom: 0 !important;
+}
 .footer {
     margin-top: 5rem; /* Aumentado */
     display: flex;

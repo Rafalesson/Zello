@@ -125,7 +125,7 @@ export class CertificateService {
     const doctorAddressObj = doctor.doctorProfile.address;
     const formattedDoctorAddress = doctorAddressObj
       ? `${doctorAddressObj.street}, ${doctorAddressObj.number} - ${doctorAddressObj.city}, ${doctorAddressObj.state}`
-      : 'Endereco nao informado';
+      : 'Endereço não informado';
 
     const cid = dto.cidCode
       ? await this.prisma.cidCode.findUnique({ where: { code: dto.cidCode } })
@@ -148,7 +148,12 @@ export class CertificateService {
           ? 'Masculino'
           : patient.patientProfile.sex === Sex.FEMALE
             ? 'Feminino'
-            : 'Nao informado',
+            : 'Não informado',
+      legalRepresentative: dto.legalRepresentative?.trim() || null,
+      legalRepresentativeCpf: dto.legalRepresentativeCpf
+        ? this.formatCpf(dto.legalRepresentativeCpf.trim())
+        : null,
+      signatureStyle: dto.signatureStyle?.trim() || null,
       durationInDays: dto.durationInDays || 0,
       durationInWords: numberToWords(dto.durationInDays || 0),
       startDate: dto.startDate

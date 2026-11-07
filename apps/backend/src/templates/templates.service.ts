@@ -1,4 +1,4 @@
-﻿// Endereço: apps/backend/src/templates/templates.service.ts
+// Endereço: apps/backend/src/templates/templates.service.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CertificateData } from 'src/certificate/certificate.types';
@@ -51,12 +51,35 @@ const sharedAssets = {
     cfmHeaderFallbackBase64,
   ),
   modernHeaderImage: loadAssetAsDataUrl(
-    'logo_zello_new.png',
+    'cfm-modern-header.png',
     'image/png',
+    cfmHeaderFallbackBase64,
+  ),
+  cfmBlueHeaderImage: loadAssetAsDataUrl(
+    'cfm-blue-header.png',
+    'image/png',
+    cfmHeaderFallbackBase64,
+  ),
+  cfmExecutiveHeaderImage: loadAssetAsDataUrl(
+    'cfm-executive-header.png',
+    'image/png',
+    cfmHeaderFallbackBase64,
   ),
   signatureImageFile: loadAssetAsDataUrl(
     'assinatura_img.jpeg',
     'image/jpeg',
+  ),
+  signatureIcpCfm: loadAssetAsDataUrl(
+    'assinatura_icp_cfm.png',
+    'image/png',
+  ),
+  signatureRubricaCrm: loadAssetAsDataUrl(
+    'assinatura_rubrica_crm.png',
+    'image/png',
+  ),
+  signatureGovIti: loadAssetAsDataUrl(
+    'assinatura_gov_iti.png',
+    'image/png',
   ),
 };
 
@@ -100,18 +123,19 @@ const allTemplates = {
                 <span><strong>Sexo:</strong> {{patientSex}}</span>
               </div>
             </section>
+            {{legalRepresentativeDefaultBlock}}
             <section class="content">
               <p>
                 Atesto, para os devidos fins, que o(a) paciente
                 <strong>{{patientName}}</strong>, portador(a) do CPF nº
-                <strong>{{patientCPF}}</strong>, esteve sob meus cuidados
+                <strong>{{patientCPF}}</strong>{{legalRepresentativeClause}}, esteve sob meus cuidados
                 profissionais na presente data, necessitando de
                 <strong>{{durationInDays}} ({{durationInWords}}) dia(s)</strong> de
                 afastamento de suas atividades laborais/outras, a partir de
                 <strong>{{startDate}}</strong>.
               </p>
               <p><strong>Finalidade:</strong> {{purpose}}</p>
-              <p><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>
+              <p><strong>CID-10:</strong> {{cidDisplay}}</p>
             </section>
           </main>
           <footer class="footer">
@@ -149,7 +173,7 @@ const allTemplates = {
       </html>
     `,
     css: `
-      body{font-family:'Helvetica',Arial,sans-serif;margin:1.5cm;font-size:12pt;line-height:1.6;color:#333;background-color:#fff;display:flex;flex-direction:column;justify-content:space-between}.header{border-bottom:1px solid #ccc;padding-bottom:15px;margin-bottom:25px}.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.cfm-header{width:155px;height:auto}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:4px}.doctor-name{margin:0;font-size:16pt;font-weight:bold;color:#1f2937}.doctor-meta,.doctor-contact{margin:0;font-size:10pt;color:#555}.title{text-align:center;font-size:16pt;font-weight:bold}main{margin-bottom:50px}.patient-info{background-color:#f7f7f7;border:1px solid #e0e0e0;padding:15px;margin-bottom:25px;border-radius:5px;font-size:11pt;display:flex;justify-content:space-evenly;gap:24px;flex-wrap:wrap}.patient-details{display:flex;flex-direction:column;gap:5px}.content{text-align:justify;width:90%;margin:0 auto}.footer{text-align:center;font-size:9pt;color:#666;margin-top:20px}#footer_p2{border-top:1px solid #ccc;padding-top:10px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}#icp_img{width:180px;height:120px}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:100px;height:100px}.validation-url{color:inherit;text-decoration:none}@media (max-width:768px){body{margin:10px;font-size:10pt}.cfm-header{width:130px}.doctor-name{font-size:14pt}.title{font-size:16pt}.patient-info{font-size:10pt}}
+      @page{size:A4;margin:0}body{font-family:'Helvetica',Arial,sans-serif;margin:0;padding:12mm 15mm;min-height:297mm;max-height:297mm;box-sizing:border-box;font-size:11.5pt;line-height:1.55;color:#333;background-color:#fff;display:flex;flex-direction:column;justify-content:space-between}.header{border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:16px}.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.cfm-header{width:155px;height:auto}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:3px}.doctor-name{margin:0;font-size:15pt;font-weight:bold;color:#1f2937}.doctor-meta,.doctor-contact{margin:0;font-size:9.5pt;color:#555}.title{text-align:center;font-size:15pt;font-weight:bold}.title h1{margin:6px 0 14px 0;font-size:19pt}main{margin-bottom:12px;flex-grow:1}.patient-info{background-color:#f7f7f7;border:1px solid #e0e0e0;padding:11px 15px;margin-bottom:14px;border-radius:5px;font-size:10.5pt;display:flex;justify-content:space-evenly;gap:24px;flex-wrap:wrap}.legal-rep-box{margin-top:-4px;margin-bottom:16px}.patient-details{display:flex;flex-direction:column;gap:4px}.content{text-align:justify;width:92%;margin:0 auto}.content p{margin:10px 0}.footer{text-align:center;font-size:8.5pt;color:#666;margin-top:auto}.footer p{margin:4px 0}#footer_p2{border-top:1px solid #ccc;padding-top:8px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-top:6px}#icp_img{width:195px;height:92px;object-fit:contain}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:92px;height:92px}.validation-url{color:inherit;text-decoration:none}
     `,
   },
 
@@ -177,12 +201,13 @@ const allTemplates = {
           <main class="main">
             <h1 class="mainTitle">Atestado Médico</h1>
             <p class="mainText">
-              Atesto, para os devidos fins, que o(a) paciente <strong>{{patientName}}</strong> portador(a) do CPF nº <strong>{{patientCPF}}</strong> necessita de <strong>{{durationInDays}} dia(s)</strong> de afastamento de suas atividades
+              Atesto, para os devidos fins, que o(a) paciente <strong>{{patientName}}</strong>, portador(a) do CPF nº <strong>{{patientCPF}}</strong>{{legalRepresentativeClause}}, necessita de <strong>{{durationInDays}} ({{durationInWords}}) dia(s)</strong> de afastamento de suas atividades
               a partir de <strong>{{startDate}}</strong>, por motivos de saúde.
             </p>
             <div class="details">
+              {{legalRepresentativeModernBlock}}
               <div class="detailItem"><span>Finalidade</span><p>{{purpose}}</p></div>
-              <div class="detailItem"><span>CID-10</span><p>{{cidCode}} - {{cidDescription}}</p></div>
+              <div class="detailItem"><span>CID-10</span><p>{{cidDisplay}}</p></div>
             </div>
           </main>
           <footer class="footer">
@@ -217,7 +242,7 @@ const allTemplates = {
       </html>
     `,
     css: `
-      .container{font-family:'Inter',sans-serif;color:#111827;background-color:white;padding:2rem}.header{padding-bottom:1rem;border-bottom:2px solid #d1d5db;margin-bottom:1.5rem}.header-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.cfm-header{width:165px;height:auto;max-height:90px;object-fit:contain}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:6px}.doctor-name{font-size:1.2rem;font-weight:600;margin:0;color:#111827}.doctor-spec,.doctor-crm{font-size:.9rem;color:#4b5563;margin:0}.main{flex-grow:1;padding-top:1.5rem}.mainTitle{font-size:1.875rem;font-weight:700;text-align:center;margin-bottom:2rem;color:#1f2937}.mainText{font-size:1rem;line-height:1.75;text-align:justify;margin-bottom:2rem}.details{background-color:#f9fafb;border-radius:8px;padding:1rem}.detailItem{padding:.75rem 0;border-bottom:1px solid #e5e7eb}.detailItem:last-child{border-bottom:none}.detailItem span{font-size:.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px}.detailItem p{margin:0;font-size:1rem}.footer{text-align:center;font-size:9pt;color:#666;margin-top:auto;padding-top:15mm}#footer_p2{border-top:1px solid #ccc;padding-top:10px;margin-top:10px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-top:1rem}#icp_img{width:180px;height:120px}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:100px;height:100px}.validation-url{color:inherit;text-decoration:none}
+      @page{size:A4;margin:0}body{margin:0;padding:0;background-color:#fff}.container{font-family:'Inter',sans-serif;color:#111827;background-color:white;padding:14mm 16mm;min-height:297mm;max-height:297mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between}.header{padding-bottom:12px;border-bottom:2px solid #d1d5db;margin-bottom:16px}.header-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.cfm-header{width:200px;height:auto;max-height:70px;object-fit:contain}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:4px}.doctor-name{font-size:1.2rem;font-weight:600;margin:0;color:#111827}.doctor-spec,.doctor-crm{font-size:.9rem;color:#4b5563;margin:0}.main{flex-grow:1;padding-top:12px}.mainTitle{font-size:1.75rem;font-weight:700;text-align:center;margin:0 0 1.5rem 0;color:#1f2937}.mainText{font-size:1rem;line-height:1.7;text-align:justify;margin-bottom:1.5rem}.details{background-color:#f9fafb;border-radius:8px;padding:.85rem 1rem}.detailItem{padding:.6rem 0;border-bottom:1px solid #e5e7eb}.detailItem:last-child{border-bottom:none}.detailItem span{font-size:.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:3px}.detailItem p{margin:0;font-size:.98rem}.footer{text-align:center;font-size:8.5pt;color:#666;margin-top:auto;padding-top:6mm}.footer p{margin:4px 0}#footer_p2{border-top:1px solid #ccc;padding-top:8px;margin-top:8px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-top:8px}#icp_img{width:195px;height:92px;object-fit:contain}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:92px;height:92px}.validation-url{color:inherit;text-decoration:none}
     `,
   },
 
@@ -247,17 +272,18 @@ const allTemplates = {
             <p>
               Atesto, para os devidos e legais fins, que o(a) paciente 
               <strong>{{patientName}}</strong>, inscrito(a) no CPF sob o nº 
-              <strong>{{patientCPF}}</strong>, encontra-se sob meus cuidados 
+              <strong>{{patientCPF}}</strong>{{legalRepresentativeClause}}, encontra-se sob meus cuidados 
               profissionais, sendo-lhe necessário o afastamento de suas atividades 
               habituais por um período de <strong>{{durationInDays}} 
-              ({{durationInWords}})</strong> dia(s), a contar de <strong>16/10/2026</strong>.
+              ({{durationInWords}})</strong> dia(s), a contar de <strong>{{startDate}}</strong>.
             </p>
+            {{legalRepresentativeClassicBlock}}
             <p class="details-line"><strong>Finalidade:</strong> {{purpose}}</p>
-            <p class="details-line"><strong>CID-10:</strong> {{cidCode}} - {{cidDescription}}</p>    
+            <p class="details-line"><strong>CID-10:</strong> {{cidDisplay}}</p>    
           </main>
           <footer class="footer">
             <div>
-              <p>Emitido em 16/10/2026 às 14:30:20</p>
+              <p>Emitido em {{issueDateTime}}</p>
               <p id="footer_p2">
                 Atendimento realizado conforme MP nº 2.200-2/2001,
                 <br />
@@ -287,7 +313,254 @@ const allTemplates = {
       </html>
     `,
     css: `
-      .container{font-family:'Times New Roman',Times,serif;color:#000;background-color:#fff;padding:20px 25mm 25mm 25mm;border:2px double #333;width:200mm;min-height:calc(297mm - 40px);margin:20px auto;box-sizing:border-box;display:flex;flex-direction:column}.header{margin-bottom:16mm;margin-top:8mm;border-bottom:1px solid #999;padding-bottom:8mm}.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}.cfm-header{width:175px;height:auto}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:4px}.doctor-name{font-size:16pt;font-weight:700;margin:0}.doctor-details{font-size:12pt;margin:0;color:#2f2f2f}.main-title{text-align:center;font-size:22pt;font-weight:700;margin:0 0 20px 0;letter-spacing:4px}.main-content{flex-grow:1}.main-content p{font-size:12pt;line-height:2;text-align:justify;text-indent:2cm}.details-line{text-indent:0;margin-top:1.5rem}.footer{text-align:center;font-size:9pt;color:#666;margin-top:auto;padding-top:15mm}#footer_p2{border-top:1px solid #ccc;padding-top:10px;margin-top:10px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-top:1rem}#icp_img{width:180px;height:120px}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:100px;height:100px}.validation-url{color:inherit;text-decoration:none}
+      @page{size:A4;margin:0}body{margin:0;padding:9mm 10mm;background-color:#fff;box-sizing:border-box}.container{font-family:'Times New Roman',Times,serif;color:#000;background-color:#fff;padding:12mm 16mm;border:2px double #333;width:100%;height:calc(297mm - 18mm);max-height:calc(297mm - 18mm);margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between}.header{margin-bottom:8mm;border-bottom:1px solid #999;padding-bottom:5mm}.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}.cfm-header{width:165px;height:auto}.doctor-info{text-align:right;display:flex;flex-direction:column;gap:3px}.doctor-name{font-size:15.5pt;font-weight:700;margin:0}.doctor-details{font-size:11.5pt;margin:0;color:#2f2f2f}.main-title{text-align:center;font-size:20pt;font-weight:700;margin:0 0 14px 0;letter-spacing:4px}.main-content{flex-grow:1}.main-content p{font-size:12pt;line-height:1.85;text-align:justify;text-indent:1.8cm;margin:10px 0}.details-line{text-indent:0 !important;margin-top:14px !important}.footer{text-align:center;font-size:8.5pt;color:#666;margin-top:auto;padding-top:5mm}.footer p{margin:4px 0}#footer_p2{border-top:1px solid #ccc;padding-top:8px;margin-top:8px}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-top:8px}#icp_img{width:190px;height:90px;object-fit:contain}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}.qr-code-img{width:90px;height:90px}.validation-url{color:inherit;text-decoration:none}
+    `,
+  },
+
+  institutional: {
+    html: `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head><meta charset="UTF-8"><title>Atestado Médico</title></head>
+      <body>
+        <div class="inst-page">
+          <div class="inst-top-bar"></div>
+          <header class="inst-header">
+            <div class="inst-brand">
+              <img
+                src="{{cfmBlueHeaderImage}}"
+                alt="Logotipo do Conselho Federal de Medicina"
+                class="cfm-header"
+              />
+            </div>
+            <div class="inst-doctor-box">
+              <span class="inst-box-tag">IDENTIFICAÇÃO DO MÉDICO EMITENTE</span>
+              <h2 class="doctor-name">{{doctorName}}</h2>
+              <p class="doctor-meta">{{doctorSpecialty}} &bull; CRM {{doctorCRM}}</p>
+              <p class="doctor-contact">{{doctorAddress}} &bull; {{doctorPhone}}</p>
+            </div>
+          </header>
+
+          <div class="inst-title-banner">
+            <h1>ATESTADO MÉDICO</h1>
+            <span class="inst-protocol">REGISTRO Nº {{certificateId}}</span>
+          </div>
+
+          <main class="inst-main">
+            <section class="inst-section">
+              <div class="inst-section-header">DADOS DE IDENTIFICAÇÃO DO PACIENTE</div>
+              <div class="inst-patient-grid">
+                <div class="inst-cell">
+                  <span class="inst-label">NOME DO(A) PACIENTE</span>
+                  <span class="inst-value">{{patientName}}</span>
+                </div>
+                <div class="inst-cell">
+                  <span class="inst-label">CPF</span>
+                  <span class="inst-value">{{patientCPF}}</span>
+                </div>
+                <div class="inst-cell">
+                  <span class="inst-label">IDADE</span>
+                  <span class="inst-value">{{patientAge}} anos</span>
+                </div>
+                <div class="inst-cell">
+                  <span class="inst-label">SEXO</span>
+                  <span class="inst-value">{{patientSex}}</span>
+                </div>
+                {{legalRepresentativeInstitutionalBlock}}
+              </div>
+            </section>
+
+            <section class="inst-section">
+              <div class="inst-section-header">DECLARAÇÃO MÉDICA</div>
+              <div class="inst-declaration-box">
+                <p>
+                  Atesto, para os devidos fins de comprovação junto às instâncias competentes, que o(a) paciente
+                  <strong>{{patientName}}</strong>, portador(a) do CPF nº <strong>{{patientCPF}}</strong>{{legalRepresentativeClause}},
+                  esteve sob avaliação e cuidados médicos sob minha responsabilidade profissional na presente data,
+                  necessitando de <strong>{{durationInDays}} ({{durationInWords}}) dia(s)</strong> de repouso e afastamento
+                  de suas atividades habituais, com início a partir de <strong>{{startDate}}</strong>.
+                </p>
+              </div>
+            </section>
+
+            <section class="inst-meta-grid">
+              <div class="inst-meta-card">
+                <span class="inst-label">FINALIDADE DO ATESTADO</span>
+                <p class="inst-meta-text">{{purpose}}</p>
+              </div>
+              <div class="inst-meta-card">
+                <span class="inst-label">DIAGNÓSTICO (CID-10)</span>
+                <p class="inst-meta-text">{{cidDisplay}}</p>
+              </div>
+            </section>
+
+            <section class="inst-sign-block">
+              <div class="inst-sign-line"></div>
+              <p class="inst-sign-name">{{doctorName}}</p>
+              <p class="inst-sign-meta">{{doctorSpecialty}} &bull; CRM {{doctorCRM}}</p>
+              <p class="inst-sign-note">Médico(a) Responsável &bull; Assinatura Digital ICP-Brasil</p>
+            </section>
+          </main>
+
+          <footer class="footer">
+            <div class="footer-info">
+              <p class="footer-issued">Emitido em {{issueDateTime}}</p>
+              <p id="footer_p2">
+                Atendimento realizado conforme MP nº 2.200-2/2001,
+                <br />
+                Resolução Nº CFM 2.299/2021, Resolução CFM Nº 2.381/2024 e Resolução
+                CFM Nº 2.382/2024.
+              </p>
+              <p class="footer-validation">
+                Documento assinado digitalmente por {{doctorName}} <br />
+                A autenticidade deste documento pode ser verificada no endereço:
+                <span class="validation-url">{{validationUrl}}</span> ou lendo o QR Code ao lado. <br />
+                Código de validação do documento: <strong>{{certificateId}}</strong>
+              </p>
+            </div>
+            <div class="container_img">
+              <div class="signature-container">
+                <img
+                  src="{{signatureImage}}"
+                  alt="Imagem da assinatura eletronica"
+                  id="icp_img"
+                />
+                <img
+                  src="{{qrCodeDataUrl}}"
+                  alt="QR Code de Validação"
+                  class="qr-code-img"
+                />
+              </div>
+            </div>
+          </footer>
+        </div>
+      </body>
+      </html>
+    `,
+    css: `
+      @page{size:A4;margin:0}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:9mm 12mm;color:#1e293b;background-color:#fff;box-sizing:border-box}.inst-page{border:1px solid #cbd5e1;height:calc(297mm - 18mm);max-height:calc(297mm - 18mm);display:flex;flex-direction:column;padding:0 11mm 5mm 11mm;box-sizing:border-box;overflow:hidden}.inst-top-bar{height:6px;background:linear-gradient(90deg,#0f172a 0%,#1d4ed8 100%);margin:0 -11mm 5mm -11mm}.inst-header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-bottom:4mm;border-bottom:2px solid #0f172a}.cfm-header{width:190px;height:auto;max-height:66px;object-fit:contain}.inst-doctor-box{text-align:right;background-color:#f8fafc;border:1px solid #e2e8f0;border-right:4px solid #1d4ed8;padding:10px 14px;border-radius:4px}.inst-box-tag{font-size:7pt;font-weight:700;letter-spacing:1.2px;color:#1d4ed8;display:block;margin-bottom:4px}.doctor-name{margin:0;font-size:13.5pt;font-weight:700;color:#0f172a}.doctor-meta{margin:3px 0 0 0;font-size:9.5pt;font-weight:600;color:#334155}.doctor-contact{margin:3px 0 0 0;font-size:8.5pt;color:#64748b}.inst-title-banner{background-color:#0f172a;color:#fff;padding:8px 18px;margin:5mm 0 5mm 0;border-radius:4px;display:flex;justify-content:space-between;align-items:center}.inst-title-banner h1{margin:0;font-size:15pt;font-weight:700;letter-spacing:3px}.inst-protocol{font-size:8.5pt;font-weight:600;color:#cbd5e1;letter-spacing:1px}.inst-main{flex-grow:1;display:flex;flex-direction:column;gap:4mm}.inst-section{border:1px solid #cbd5e1;border-radius:5px;overflow:hidden}.inst-section-header{background-color:#f1f5f9;padding:6px 16px;font-size:8.5pt;font-weight:700;letter-spacing:1.2px;color:#334155;border-bottom:1px solid #cbd5e1}.inst-patient-grid{display:grid;grid-template-columns:1.5fr 1fr}.inst-cell{padding:9px 16px;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:4px}.inst-cell:nth-child(2n){border-right:none}.inst-cell:nth-child(3),.inst-cell:nth-child(4){border-bottom:none}.inst-rep-grid{grid-column:1 / -1;border-top:1px solid #cbd5e1;background-color:#f8fafc;display:grid;grid-template-columns:1.5fr 1fr}.inst-rep-grid .inst-cell{border-bottom:none}.inst-rep-grid .inst-cell:last-child{border-right:none}.inst-label{font-size:7.5pt;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase}.inst-value{font-size:11pt;font-weight:600;color:#0f172a}.inst-declaration-box{padding:14px 20px;background-color:#fff}.inst-declaration-box p{margin:0;font-size:11.3pt;line-height:1.72;text-align:justify;color:#1e293b}.inst-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.inst-meta-card{border:1px solid #cbd5e1;border-left:4px solid #1d4ed8;border-radius:5px;padding:11px 16px;background-color:#f8fafc}.inst-meta-text{margin:6px 0 0 0;font-size:11pt;line-height:1.45;font-weight:600;color:#0f172a}.inst-sign-block{margin-top:auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:2mm;padding-bottom:1mm}.inst-sign-line{width:72mm;border-top:1.2px solid #0f172a;margin-bottom:7px}.inst-sign-name{margin:0;font-size:11.5pt;font-weight:700;color:#0f172a}.inst-sign-meta{margin:3px 0 0 0;font-size:9.5pt;font-weight:600;color:#334155}.inst-sign-note{margin:3px 0 0 0;font-size:7.5pt;letter-spacing:.8px;color:#64748b;text-transform:uppercase}.footer{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:2px solid #0f172a;padding-top:3.5mm;margin-top:3mm;font-size:8pt;color:#475569;text-align:left}.footer-info{display:flex;flex-direction:column;gap:5px;max-width:58%}.footer-issued{font-weight:700;color:#0f172a;margin:0;font-size:8.5pt}#footer_p2{border-top:1px solid #cbd5e1;padding-top:5px;margin:2px 0;line-height:1.45}.footer-validation{margin:0;line-height:1.45}.container_img{display:flex;align-items:center;justify-content:flex-end}.signature-container{display:flex;align-items:center;justify-content:center;gap:12px}#icp_img{width:180px;height:86px;object-fit:contain}.qr-code-img{width:86px;height:86px}.validation-url{color:inherit;text-decoration:none}
+    `,
+  },
+
+  executive: {
+    html: `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head><meta charset="UTF-8"><title>Atestado Médico</title></head>
+      <body>
+        <div class="exec-container">
+          <header class="exec-header">
+            <div class="exec-brand">
+              <img
+                src="{{cfmExecutiveHeaderImage}}"
+                alt="Logotipo do Conselho Federal de Medicina"
+                class="cfm-header"
+              />
+            </div>
+            <div class="exec-doctor">
+              <h2 class="doctor-name">{{doctorName}}</h2>
+              <p class="doctor-spec">{{doctorSpecialty}} &bull; CRM {{doctorCRM}}</p>
+              <p class="doctor-contact">{{doctorAddress}} | {{doctorPhone}}</p>
+            </div>
+          </header>
+
+          <main class="exec-main">
+            <div class="exec-title-block">
+              <h1 class="exec-title">ATESTADO MÉDICO</h1>
+              <p class="exec-subtitle">Certificação Clínica de Atendimento e Recomendação de Afastamento</p>
+            </div>
+
+            <section class="exec-card">
+              <div class="exec-card-header">DADOS DE IDENTIFICAÇÃO DO(A) PACIENTE</div>
+              <div class="exec-patient-grid">
+                <div class="exec-cell">
+                  <span class="exec-label">Nome do(a) Paciente</span>
+                  <span class="exec-val">{{patientName}}</span>
+                </div>
+                <div class="exec-cell">
+                  <span class="exec-label">CPF</span>
+                  <span class="exec-val">{{patientCPF}}</span>
+                </div>
+                <div class="exec-cell">
+                  <span class="exec-label">Idade</span>
+                  <span class="exec-val">{{patientAge}} anos</span>
+                </div>
+                <div class="exec-cell">
+                  <span class="exec-label">Sexo</span>
+                  <span class="exec-val">{{patientSex}}</span>
+                </div>
+              </div>
+            </section>
+
+            {{legalRepresentativeExecutiveBlock}}
+
+            <section class="exec-statement-box">
+              <div class="exec-statement-header">DECLARAÇÃO CLÍNICA</div>
+              <p class="exec-statement">
+                Atesto, para os devidos fins, que o(a) paciente <strong>{{patientName}}</strong>,
+                portador(a) do CPF nº <strong>{{patientCPF}}</strong>{{legalRepresentativeClause}},
+                esteve sob meus cuidados profissionais nesta data, necessitando de
+                <strong>{{durationInDays}} ({{durationInWords}}) dia(s)</strong> de afastamento
+                de suas atividades laborais/habituais, a partir de <strong>{{startDate}}</strong>, por motivos de saúde.
+              </p>
+            </section>
+
+            <section class="exec-card">
+              <div class="exec-card-header">SÍNTESE E ESPECIFICAÇÕES DO ATENDIMENTO</div>
+              <div class="exec-patient-grid">
+                <div class="exec-cell">
+                  <span class="exec-label">Período de Afastamento</span>
+                  <span class="exec-val">{{durationInDays}} ({{durationInWords}}) dia(s) &mdash; Início: {{startDate}}</span>
+                </div>
+                <div class="exec-cell">
+                  <span class="exec-label">Codificação CID-10</span>
+                  <span class="exec-val">{{cidDisplay}}</span>
+                </div>
+                <div class="exec-cell exec-cell-full">
+                  <span class="exec-label">Finalidade do Documento</span>
+                  <span class="exec-val">{{purpose}}</span>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          <footer class="footer">
+            <div class="exec-footer-text">
+              <p class="exec-issued">Emitido em {{issueDateTime}}</p>
+              <p id="footer_p2">
+                Atendimento realizado conforme MP nº 2.200-2/2001,
+                <br />
+                Resolução Nº CFM 2.299/2021, Resolução CFM Nº 2.381/2024 e Resolução
+                CFM Nº 2.382/2024.
+              </p>
+              <p>
+                Documento assinado digitalmente por {{doctorName}} <br />
+                A autenticidade deste documento pode ser verificada no endereço:
+                <span class="validation-url">{{validationUrl}}</span> ou lendo o QR Code abaixo. <br />
+                Código de validação do documento: <strong>{{certificateId}}</strong>
+              </p>
+            </div>
+            <div class="container_img">
+              <div class="signature-container">
+                <img
+                  src="{{signatureImage}}"
+                  alt="Imagem da assinatura eletronica"
+                  id="icp_img"
+                />
+                <img
+                  src="{{qrCodeDataUrl}}"
+                  alt="QR Code de Validação"
+                  class="qr-code-img"
+                />
+              </div>
+            </div>
+          </footer>
+        </div>
+      </body>
+      </html>
+    `,
+    css: `
+      @page{size:A4;margin:0}body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;margin:0;padding:10mm 14mm;background-color:#fff;color:#0f172a;box-sizing:border-box}.exec-container{height:calc(297mm - 20mm);max-height:calc(297mm - 20mm);display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;overflow:hidden}.exec-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:4mm;border-bottom:2px solid #0f766e;gap:16px}.exec-brand{display:flex;align-items:center}.cfm-header{width:190px;height:auto;max-height:66px;object-fit:contain}.exec-doctor{text-align:right;border-right:3px solid #0f766e;padding-right:12px;display:flex;flex-direction:column;gap:2px}.doctor-name{margin:0;font-size:13.5pt;font-weight:700;color:#0f172a}.doctor-spec{margin:0;font-size:9pt;font-weight:600;color:#0f766e}.doctor-contact{margin:0;font-size:8pt;color:#475569}.exec-main{flex-grow:1;padding-top:4mm;display:flex;flex-direction:column;gap:3.8mm}.exec-title-block{text-align:center;margin-bottom:0.5mm}.exec-title{margin:0;font-size:15.5pt;font-weight:800;color:#0f172a;letter-spacing:1.5px}.exec-subtitle{margin:2px 0 0 0;font-size:8pt;font-weight:500;color:#64748b;letter-spacing:.3px}.exec-card{border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;background-color:#fff}.exec-card-header{background-color:#f1f5f9;border-bottom:1px solid #cbd5e1;padding:4.5px 12px;font-size:7pt;font-weight:700;letter-spacing:1px;color:#0f766e;text-transform:uppercase}.exec-patient-grid{display:grid;grid-template-columns:1.4fr 1fr}.exec-cell{padding:7.5px 12px;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:2px}.exec-cell:nth-child(2n){border-right:none}.exec-cell:last-child,.exec-cell:nth-last-child(2):nth-child(odd){border-bottom:none}.exec-cell-full{grid-column:1 / -1;border-top:1px solid #e2e8f0;border-right:none;border-bottom:none}.exec-label{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#64748b}.exec-val{font-size:10pt;font-weight:600;color:#0f172a}.exec-statement-box{border:1px solid #cbd5e1;border-left:4px solid #0f766e;background-color:#f8fafc;padding:10px 16px;border-radius:4px}.exec-statement-header{font-size:7pt;font-weight:700;letter-spacing:1px;color:#0f766e;text-transform:uppercase;margin-bottom:4px}.exec-statement{margin:0;font-size:10.5pt;line-height:1.68;text-align:justify;color:#1e293b}.footer{margin-top:auto;padding-top:3mm;text-align:center;font-size:8pt;color:#475569;border-top:1px solid #cbd5e1}.container_img{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:2.5mm}.signature-container{display:flex;align-items:center;justify-content:center;gap:20px}#icp_img{width:185px;height:86px;object-fit:contain}.qr-code-img{width:86px;height:86px}.exec-footer-text{padding:2px 8px}.exec-footer-text p{margin:3px 0;line-height:1.4}.exec-issued{font-weight:700;color:#0f172a}#footer_p2{border-top:1px solid #e2e8f0;padding-top:5px;margin-top:5px}.validation-url{color:inherit;text-decoration:none}
     `,
   },
 };
@@ -457,12 +730,98 @@ export class TemplatesService {
 
     const { html, css } = template;
 
-    const signatureJpeg = sharedAssets.signatureImageFile;
+    const signatureMap: Record<string, string> = {
+      icp_cfm: sharedAssets.signatureIcpCfm,
+      rubrica_crm: sharedAssets.signatureRubricaCrm,
+      gov_iti: sharedAssets.signatureGovIti,
+      classic_icp: sharedAssets.signatureImageFile,
+    };
+
+    const defaultSignatureByTemplate: Record<string, string> = {
+      default: sharedAssets.signatureIcpCfm,
+      modern: sharedAssets.signatureRubricaCrm,
+      classic: sharedAssets.signatureImageFile,
+      institutional: sharedAssets.signatureGovIti,
+      executive: sharedAssets.signatureIcpCfm,
+    };
+
+    const selectedSignature =
+      (data.signatureStyle && signatureMap[data.signatureStyle]) ||
+      defaultSignatureByTemplate[templateId] ||
+      sharedAssets.signatureIcpCfm;
 
     // Garantir que o horário exibido esteja no fuso de Brasília (America/Sao_Paulo)
     const formattedIssueDateTime = this.formatToSaoPaulo(
       data.issueDateTime ?? '',
     );
+
+    const legalRepresentative = data.legalRepresentative?.trim() ?? '';
+    const legalRepresentativeCpf = data.legalRepresentativeCpf?.trim() ?? '';
+    const hasLegalRep = legalRepresentative.length > 0;
+    const hasLegalRepCpf = legalRepresentativeCpf.length > 0;
+    const displayLegalRepCpf = hasLegalRepCpf
+      ? legalRepresentativeCpf
+      : 'Não informado';
+
+    const legalRepresentativeClause = hasLegalRep
+      ? `, representado(a) legalmente por <strong>${legalRepresentative}</strong>${
+          hasLegalRepCpf
+            ? `, inscrito(a) no CPF sob o nº <strong>${legalRepresentativeCpf}</strong>`
+            : ''
+        }`
+      : '';
+    const legalRepresentativeDefaultBlock = hasLegalRep
+      ? `<section class="patient-info legal-rep-box">
+          <div class="patient-details">
+            <span><strong>Representante Legal:</strong> ${legalRepresentative}</span>
+          </div>
+          <div class="patient-details">
+            <span><strong>CPF do Representante:</strong> ${displayLegalRepCpf}</span>
+          </div>
+        </section>`
+      : '';
+    const legalRepresentativeModernBlock = hasLegalRep
+      ? `<div class="detailItem"><span>Representante Legal</span><p>${legalRepresentative} &bull; CPF: ${displayLegalRepCpf}</p></div>`
+      : '';
+    const legalRepresentativeClassicBlock = hasLegalRep
+      ? `<p class="details-line"><strong>Representante Legal:</strong> ${legalRepresentative} (CPF: ${displayLegalRepCpf})</p>`
+      : '';
+    const legalRepresentativeInstitutionalBlock = hasLegalRep
+      ? `<div class="inst-rep-grid">
+          <div class="inst-cell">
+            <span class="inst-label">REPRESENTANTE LEGAL / RESPONSÁVEL</span>
+            <span class="inst-value">${legalRepresentative}</span>
+          </div>
+          <div class="inst-cell">
+            <span class="inst-label">CPF DO REPRESENTANTE</span>
+            <span class="inst-value">${displayLegalRepCpf}</span>
+          </div>
+        </div>`
+      : '';
+    const legalRepresentativeExecutiveBlock = hasLegalRep
+      ? `<section class="exec-card">
+          <div class="exec-card-header">DADOS DO REPRESENTANTE LEGAL / RESPONSÁVEL</div>
+          <div class="exec-patient-grid">
+            <div class="exec-cell">
+              <span class="exec-label">Representante Legal</span>
+              <span class="exec-val">${legalRepresentative}</span>
+            </div>
+            <div class="exec-cell">
+              <span class="exec-label">CPF do Representante</span>
+              <span class="exec-val">${displayLegalRepCpf}</span>
+            </div>
+          </div>
+        </section>`
+      : '';
+
+    const rawCidCode = data.cidCode?.trim() ?? '';
+    const rawCidDesc = data.cidDescription?.trim() ?? '';
+    const cidDisplay =
+      rawCidCode && rawCidDesc
+        ? `${rawCidCode} - ${rawCidDesc}`
+        : rawCidCode
+          ? rawCidCode
+          : 'Não informado';
 
     const populatedHtml = html
       .replace(/{{doctorName}}/g, data.doctorName ?? '')
@@ -477,19 +836,48 @@ export class TemplatesService {
       .replace(/{{patientCPF}}/g, data.patientCpf ?? '')
       .replace(/{{patientAge}}/g, data.patientAge ?? '')
       .replace(/{{patientSex}}/g, data.patientSex ?? 'Não informado')
+      .replace(/{{legalRepresentative}}/g, legalRepresentative)
+      .replace(/{{legalRepresentativeCPF}}/g, displayLegalRepCpf)
+      .replace(/{{legalRepresentativeClause}}/g, legalRepresentativeClause)
+      .replace(
+        /{{legalRepresentativeDefaultBlock}}/g,
+        legalRepresentativeDefaultBlock,
+      )
+      .replace(
+        /{{legalRepresentativeModernBlock}}/g,
+        legalRepresentativeModernBlock,
+      )
+      .replace(
+        /{{legalRepresentativeClassicBlock}}/g,
+        legalRepresentativeClassicBlock,
+      )
+      .replace(
+        /{{legalRepresentativeInstitutionalBlock}}/g,
+        legalRepresentativeInstitutionalBlock,
+      )
+      .replace(
+        /{{legalRepresentativeExecutiveBlock}}/g,
+        legalRepresentativeExecutiveBlock,
+      )
       .replace(/{{durationInDays}}/g, data.durationInDays.toString())
       .replace(/{{durationInWords}}/g, data.durationInWords ?? '')
       .replace(/{{startDate}}/g, data.startDate ?? '')
       .replace(/{{purpose}}/g, data.purpose ?? '')
+      .replace(/{{cidDisplay}}/g, cidDisplay)
       .replace(/{{cidCode}}/g, data.cidCode ?? 'Não informado')
       .replace(/{{cidDescription}}/g, data.cidDescription ?? '')
       .replace(/{{issueDateTime}}/g, formattedIssueDateTime)
       .replace(/{{certificateId}}/g, data.certificateId ?? '')
       .replace('{{validationUrl}}', validationUrl)
-      .replace('{{signatureImage}}', signatureJpeg)
+      .replace('{{signatureImage}}', selectedSignature)
       .replace('{{qrCodeDataUrl}}', qrCodeDataUrl)
       .replace('{{cfmHeaderImage}}', sharedAssets.cfmHeaderImage)
       .replace('{{modernHeaderImage}}', sharedAssets.modernHeaderImage)
+      .replace('{{cfmBlueHeaderImage}}', sharedAssets.cfmBlueHeaderImage)
+      .replace(
+        '{{cfmExecutiveHeaderImage}}',
+        sharedAssets.cfmExecutiveHeaderImage,
+      )
       .replace('{{medicineIcon}}', sharedAssets.medicineIcon);
 
     return populatedHtml.replace('</head>', `<style>${css}</style></head>`);

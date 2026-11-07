@@ -10,10 +10,22 @@
 }
 
 .header {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid #ccc;
     padding-bottom: 15px;
     margin-bottom: 25px;
+}
+
+.cfmHeader {
+    width: 145px;
+    height: auto;
+    object-fit: contain;
+}
+
+.headerDoctor {
+    text-align: right;
 }
 
 .doctorName {
@@ -46,11 +58,16 @@
     background-color: #f7f7f7;
     border: 1px solid #e0e0e0;
     padding: 15px;
-    margin-bottom: 25px;
+    margin-bottom: 14px;
     border-radius: 5px;
     font-size: 11pt;
     display: flex;
     justify-content: space-evenly;
+}
+
+.legalRepBox {
+    margin-top: -4px;
+    margin-bottom: 25px;
 }
 
 .patientDetailGroup {
