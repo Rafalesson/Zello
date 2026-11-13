@@ -59,8 +59,12 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async ensureBrowser(): Promise<Browser> {
-    if (this.browser) {
+    if (this.browser?.connected) {
       return this.browser;
+    }
+
+    if (this.browser) {
+      this.browser = null;
     }
 
     try {
@@ -86,11 +90,27 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000,
+      });
+      // Aguarda a decodificacao de imagens inline (base64) sem depender de networkidle0.
+      await page.evaluate(() =>
+        Promise.all(
+          Array.from(document.images).map((img) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise<void>((resolve) => {
+                  img.onload = () => resolve();
+                  img.onerror = () => resolve();
+                }),
+          ),
+        ),
+      );
       const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
       return Buffer.from(pdfBuffer);
     } finally {
-      await page.close();
+      await page.close().catch(() => undefined);
     }
   }
 }
