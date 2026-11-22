@@ -13,7 +13,8 @@ import { ModernTemplate } from './templates/modern';
 import { ClassicTemplate } from './templates/classic';
 import { InstitutionalTemplate } from './templates/institutional';
 import { ExecutiveTemplate } from './templates/executive';
-import { CheckCircle, Download, Home, Loader2, UserCheck } from 'lucide-react';
+import { Calendar, CheckCircle, Download, Home, Loader2, UserCheck } from 'lucide-react';
+import { getCurrentSaoPauloDateTimeLocal, toSaoPauloIsoString } from '@/utils/date';
 
 type Cid = { id: string; code: string; description: string; };
 
@@ -37,10 +38,12 @@ const ActiveTemplatePreview = () => {
 export function CertificateForm() {
   const router = useRouter();
   const { data, setData, clearData } = useAttestation();
-  
+  const isCustomDateEnabled = process.env.NEXT_PUBLIC_ALLOW_CUSTOM_CERTIFICATE_DATE !== 'false';
+
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<{ pdfUrl: string } | null>(null);
+  const [isStartDateManuallyEdited, setIsStartDateManuallyEdited] = useState(false);
 
   const searchPatients = async (query: string): Promise<Patient[]> => {
     try {
@@ -107,6 +110,14 @@ export function CertificateForm() {
           data.signatureStyle && data.signatureStyle !== 'auto'
             ? data.signatureStyle
             : undefined,
+        issueDateTime:
+          isCustomDateEnabled && data.useCustomDate && data.customIssueDateTime
+            ? toSaoPauloIsoString(data.customIssueDateTime)
+            : undefined,
+        startDate:
+          isCustomDateEnabled && data.useCustomDate && data.customStartDate
+            ? data.customStartDate
+            : undefined,
       };
 
       const response = await api.post('/certificates', dto);
@@ -114,6 +125,7 @@ export function CertificateForm() {
 
       if (result && result.pdfUrl) {
         setSubmissionResult({ pdfUrl: result.pdfUrl });
+        setIsStartDateManuallyEdited(false);
         clearData(); 
       } else {
         throw new Error("A resposta da API não incluiu uma URL para o PDF.");
@@ -328,6 +340,124 @@ export function CertificateForm() {
             </select>
           </div>
         </div>
+
+        {isCustomDateEnabled && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 transition-colors">
+            <div className="flex items-center justify-between gap-4">
+              <label
+                htmlFor="useCustomDate"
+                className="flex items-center gap-2.5 text-sm font-medium text-gray-800 cursor-pointer select-none"
+              >
+                <Calendar className="h-4 w-4 text-amber-600" />
+                <span>Personalizar data de emissão do atestado</span>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  Testes
+                </span>
+              </label>
+              <button
+                type="button"
+                id="useCustomDate"
+                role="switch"
+                aria-checked={data.useCustomDate}
+                onClick={() => {
+                  const nextEnabled = !data.useCustomDate;
+                  if (nextEnabled) {
+                    const defaultDateTime =
+                      data.customIssueDateTime || getCurrentSaoPauloDateTimeLocal();
+                    const defaultStartDate =
+                      data.customStartDate || defaultDateTime.slice(0, 10);
+                    setData({
+                      ...data,
+                      useCustomDate: true,
+                      customIssueDateTime: defaultDateTime,
+                      customStartDate: defaultStartDate,
+                    });
+                  } else {
+                    setIsStartDateManuallyEdited(false);
+                    setData({
+                      ...data,
+                      useCustomDate: false,
+                      customIssueDateTime: '',
+                      customStartDate: '',
+                    });
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+                  data.useCustomDate ? 'bg-amber-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    data.useCustomDate ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="customIssueDateTime"
+                  className={`mb-1.5 block text-xs font-medium ${
+                    data.useCustomDate ? 'text-gray-700' : 'text-gray-400'
+                  }`}
+                >
+                  Data e hora de emissão (Horário de Brasília)
+                </label>
+                <input
+                  type="datetime-local"
+                  id="customIssueDateTime"
+                  disabled={!data.useCustomDate}
+                  required={data.useCustomDate}
+                  value={data.customIssueDateTime}
+                  onChange={(e) => {
+                    const newIssueDateTime = e.target.value;
+                    setData({
+                      ...data,
+                      customIssueDateTime: newIssueDateTime,
+                      customStartDate:
+                        !isStartDateManuallyEdited && newIssueDateTime.length >= 10
+                          ? newIssueDateTime.slice(0, 10)
+                          : data.customStartDate,
+                    });
+                  }}
+                  className={`w-full rounded-md border p-3 text-sm transition-colors focus:outline-none ${
+                    data.useCustomDate
+                      ? 'border-gray-300 bg-white text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-300'
+                      : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="customStartDate"
+                  className={`mb-1.5 block text-xs font-medium ${
+                    data.useCustomDate ? 'text-gray-700' : 'text-gray-400'
+                  }`}
+                >
+                  Data de início do afastamento
+                </label>
+                <input
+                  type="date"
+                  id="customStartDate"
+                  disabled={!data.useCustomDate}
+                  required={data.useCustomDate}
+                  value={data.customStartDate}
+                  onChange={(e) => {
+                    setIsStartDateManuallyEdited(true);
+                    setData({ ...data, customStartDate: e.target.value });
+                  }}
+                  className={`w-full rounded-md border p-3 text-sm transition-colors focus:outline-none ${
+                    data.useCustomDate
+                      ? 'border-gray-300 bg-white text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-300'
+                      : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end">
           <button type="submit" className="rounded-md bg-blue-600 px-6 py-2 text-white font-semibold cursor-pointer hover:bg-blue-700">

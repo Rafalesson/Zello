@@ -22,6 +22,10 @@ export class CreateCertificateDto {
   startDate?: string;
 
   @IsOptional()
+  @IsDateString()
+  issueDateTime?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   durationInDays?: number;

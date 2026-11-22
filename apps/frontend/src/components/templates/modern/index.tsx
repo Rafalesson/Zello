@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { AuthContext } from '@/contexts/AuthProvider';
 import { useAttestation, resolveSignatureImage } from '@/contexts/AttestationContext';
 import styles from './style.module.css';
-import { numberToWords } from '@/utils/date';
+import { formatCertificatePreviewDates, numberToWords } from '@/utils/date';
 import Image from 'next/image';
 
 export function ModernTemplate() {
@@ -31,8 +31,7 @@ export function ModernTemplate() {
   const activeLegalRepCpf = hasLegalRepresentative && legalRepresentativeCpf.trim().length > 0 ? legalRepresentativeCpf.trim() : null;
   const signatureImgSrc = resolveSignatureImage(signatureStyle, templateId);
   const { name: doctorName, crm: doctorCrm, specialty } = user.doctorProfile;
-  const startDate = new Date().toLocaleDateString('pt-BR');
-  const issueDateTime = new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+  const { startDate, issueDateTime } = formatCertificatePreviewDates(attestationData);
 
   return (
     <div className={styles.container}>

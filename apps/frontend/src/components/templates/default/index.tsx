@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { AuthContext } from '@/contexts/AuthProvider';
 import { useAttestation, resolveSignatureImage } from '@/contexts/AttestationContext';
 import styles from './style.module.css';
-import { calculateAge, numberToWords } from '@/utils/date';
+import { calculateAge, formatCertificatePreviewDates, numberToWords } from '@/utils/date';
 import Image from 'next/image';
 
 export function DefaultTemplate() {
@@ -55,8 +55,7 @@ export function DefaultTemplate() {
     ? `${address.street}, ${address.number} - ${address.city}, ${address.state}` 
     : 'Endereço não informado';
     
-  const issueDateTime = new Date().toLocaleString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const startDate = new Date().toLocaleDateString('pt-BR');
+  const { startDate, issueDateTime } = formatCertificatePreviewDates(attestationData);
 
   return (
     <div className={styles.certificateBody}>

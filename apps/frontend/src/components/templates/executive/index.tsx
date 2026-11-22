@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { AuthContext } from '@/contexts/AuthProvider';
 import { useAttestation, resolveSignatureImage } from '@/contexts/AttestationContext';
 import styles from './style.module.css';
-import { calculateAge, numberToWords } from '@/utils/date';
+import { calculateAge, formatCertificatePreviewDates, numberToWords } from '@/utils/date';
 import Image from 'next/image';
 
 export function ExecutiveTemplate() {
@@ -54,15 +54,7 @@ export function ExecutiveTemplate() {
     ? `${address.street}, ${address.number} - ${address.city}, ${address.state}`
     : 'Endereço não informado';
 
-  const issueDateTime = new Date().toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-  const startDate = new Date().toLocaleDateString('pt-BR');
+  const { startDate, issueDateTime } = formatCertificatePreviewDates(attestationData);
 
   return (
     <div className={styles.execContainer}>
@@ -164,7 +156,7 @@ export function ExecutiveTemplate() {
 
       <footer className={styles.footer}>
         <div className={styles.execFooterText}>
-          <p className={styles.execIssued}>Emitido em {issueDateTime} (GMT-03)</p>
+          <p className={styles.execIssued}>Emitido em {issueDateTime}</p>
           <p className={styles.footerP2}>
             Atendimento realizado conforme MP nº 2.200-2/2001,
             <br />

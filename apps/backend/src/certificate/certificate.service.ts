@@ -30,6 +30,40 @@ export class CertificateService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  private isCustomDateAllowed(): boolean {
+    return process.env.ALLOW_CUSTOM_CERTIFICATE_DATE !== 'false';
+  }
+
+  private resolveIssueDate(rawIssueDateTime?: string): Date {
+    if (this.isCustomDateAllowed() && rawIssueDateTime) {
+      const parsed = new Date(rawIssueDateTime);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return new Date();
+  }
+
+  private parseStartDateForPersistence(rawStartDate?: string): Date | undefined {
+    if (!rawStartDate) {
+      return undefined;
+    }
+
+    const trimmed = rawStartDate.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const parsed = new Date(`${trimmed}T12:00:00-03:00`);
+      return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+  }
+
   private formatDateToSaoPaulo(value?: string | Date | null): string {
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
       const [year, month, day] = value.split('-');
@@ -103,6 +137,7 @@ export class CertificateService {
     dto: CreateCertificateDto,
     doctorId: number,
     certificateCode: string,
+    resolvedIssueDate?: Date,
   ): Promise<CertificateData> {
     const patientId = dto.patientId ?? 0;
 
@@ -130,7 +165,8 @@ export class CertificateService {
     const cid = dto.cidCode
       ? await this.prisma.cidCode.findUnique({ where: { code: dto.cidCode } })
       : null;
-    const issueDate = new Date();
+    const issueDate =
+      resolvedIssueDate ?? this.resolveIssueDate(dto.issueDateTime);
 
     return {
       doctorName: doctor.doctorProfile.name,
@@ -182,12 +218,17 @@ export class CertificateService {
 
   async create(createCertificateDto: CreateCertificateDto, doctorId: number) {
     const code = await this.generateUniqueCertificateCode();
+    const issueDate = this.resolveIssueDate(createCertificateDto.issueDateTime);
+    const parsedStartDate = this.parseStartDateForPersistence(
+      createCertificateDto.startDate,
+    );
 
     const certificateRecord = await this.prisma.medicalCertificate.create({
       data: {
         code,
+        issueDate,
         purpose: createCertificateDto.purpose,
-        startDate: createCertificateDto.startDate,
+        startDate: parsedStartDate ?? issueDate,
         durationInDays: createCertificateDto.durationInDays,
         cidCode: createCertificateDto.cidCode,
         observations: createCertificateDto.observations,
@@ -203,6 +244,7 @@ export class CertificateService {
       createCertificateDto,
       doctorId,
       certificateRecord.code,
+      issueDate,
     );
     const html = await this.templatesService.getPopulatedCertificateHtml(
       data,
@@ -286,6 +328,7 @@ export class CertificateService {
 
     return {
       issuedAt: certificate.issueDate,
+      startDate: certificate.startDate ?? null,
       durationInDays: certificate.durationInDays,
       doctorName: certificate.doctor.doctorProfile?.name,
       doctorCrm: certificate.doctor.doctorProfile?.crm,

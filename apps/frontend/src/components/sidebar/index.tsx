@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { LayoutDashboard, FileText, Calendar, LogOut } from 'lucide-react';
 import { useContext } from 'react';
@@ -53,7 +53,11 @@ export function Sidebar({ closeSidebar }: SidebarProps) {
       <div className="mt-auto">
         <div className="mb-4 p-2 border-t border-gray-700">
             <p className="font-semibold">{user?.doctorProfile?.name || user?.email}</p>
-            <p className="text-sm text-gray-400">{user?.role === 'DOCTOR' ? 'Médico(a)' : 'Usuário'}</p>
+            <p className="text-sm text-gray-400">
+              {user?.role === 'DOCTOR'
+                ? user.doctorProfile?.specialty?.trim() || 'Clínico Geral'
+                : 'Usuário'}
+            </p>
         </div>
         <button 
             onClick={signOut} 

@@ -1,4 +1,4 @@
-﻿// src/components/ValidationResult.tsx
+// src/components/ValidationResult.tsx
 "use client";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 
@@ -7,7 +7,8 @@ interface ValidationResultContent {
   doctorName?: string | null;
   doctorCrm?: string | null;
   durationInDays?: number | null;
-  // issuedAt?: string | null;
+  issuedAt?: string | null;
+  startDate?: string | null;
   pdfUrl?: string | null;
 }
 
@@ -16,48 +17,71 @@ interface ValidationResultProps {
   error: string | null;
 }
 
-// const formatIssuedAt = (value: string): string => {
-//   try {
-//     const date = new Date(value);
-//     if (Number.isNaN(date.getTime())) {
-//       return value;
-//     }
+const formatIssuedAt = (value: string): string => {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
 
-//     const formatter = new Intl.DateTimeFormat("pt-BR", {
-//       timeZone: "America/Sao_Paulo",
-//       day: "2-digit",
-//       month: "2-digit",
-//       year: "numeric",
-//       hour: "2-digit",
-//       minute: "2-digit",
-//       second: "2-digit",
-//       hour12: false,
-//     });
+    const formatter = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
 
-//     const parts = formatter.formatToParts(date);
-//     const get = (type: Intl.DateTimeFormatPartTypes) =>
-//       parts.find((part) => part.type === type)?.value ?? "";
+    const parts = formatter.formatToParts(date);
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? "";
 
-//     const day = get("day");
-//     const month = get("month");
-//     const year = get("year");
-//     const hour = get("hour");
-//     const minute = get("minute");
-//     const second = get("second");
+    const day = get("day");
+    const month = get("month");
+    const year = get("year");
+    const hour = get("hour") === "24" ? "00" : get("hour");
+    const minute = get("minute");
+    const second = get("second");
 
-//     if (day && month && year && hour && minute && second) {
-//       return `${day}/${month}/${year} - ${hour}:${minute}:${second} (GMT-03)`;
-//     }
+    if (day && month && year && hour && minute && second) {
+      return `${day}/${month}/${year} - ${hour}:${minute}:${second} (GMT-03)`;
+    }
 
-//     const fallback = formatter
-//       .format(date)
-//       .replace(", ", " - ")
-//       .replace(" ", " - ");
-//     return `${fallback} (GMT-03)`;
-//   } catch {
-//     return value;
-//   }
-// };
+    const fallback = formatter
+      .format(date)
+      .replace(", ", " - ")
+      .replace(" ", " - ");
+    return `${fallback} (GMT-03)`;
+  } catch {
+    return value;
+  }
+};
+
+const formatStartDate = (value: string): string => {
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+      const [year, month, day] = value.trim().split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return value;
+  }
+};
 
 export const ValidationResult = ({ result, error }: ValidationResultProps) => {
   if (error) {
@@ -137,9 +161,11 @@ export const ValidationResult = ({ result, error }: ValidationResultProps) => {
   const patientName = result.patientName?.trim() || "Não informado";
   const doctorName = result.doctorName?.trim() || "Não informado";
   const doctorCrm = result.doctorCrm?.trim();
-  // const issuedAtLabel = result.issuedAt
-  //   ? formatIssuedAt(result.issuedAt)
-  //   : "Não informado";
+  const issuedAtLabel = result.issuedAt ? formatIssuedAt(result.issuedAt) : null;
+  const startDateLabel = result.startDate ? formatStartDate(result.startDate) : null;
+  const isCertificate =
+    typeof result.durationInDays === "number" || Boolean(result.startDate);
+  const documentTitle = isCertificate ? "Atestado original" : "Receita original";
 
   return (
     <div className="rounded-md border border-green-200 bg-green-50 p-4 text-center w-full">
@@ -153,6 +179,16 @@ export const ValidationResult = ({ result, error }: ValidationResultProps) => {
           <strong>Médico Responsável:</strong> {doctorName}
           {doctorCrm ? ` (CRM: ${doctorCrm})` : ""}
         </p>
+        {issuedAtLabel && (
+          <p>
+            <strong>Data de Emissão:</strong> {issuedAtLabel}
+          </p>
+        )}
+        {startDateLabel && (
+          <p>
+            <strong>Início do Afastamento:</strong> {startDateLabel}
+          </p>
+        )}
         {typeof result.durationInDays === "number" && (
           <p>
             <strong>Dias de afastamento:</strong> {result.durationInDays}
@@ -163,11 +199,11 @@ export const ValidationResult = ({ result, error }: ValidationResultProps) => {
       {pdfSrc ? (
         <div className="mt-6 text-left">
           <h3 className="mb-3 text-sm font-semibold text-gray-700">
-            Receita original
+            {documentTitle}
           </h3>
           <div className="h-[640px] w-full overflow-hidden rounded-md border border-gray-200 shadow-sm bg-white">
             <iframe
-              title="Receita original"
+              title={documentTitle}
               src={`${pdfSrc}#toolbar=0`}
               className="h-full w-full"
             />
@@ -185,7 +221,7 @@ export const ValidationResult = ({ result, error }: ValidationResultProps) => {
         </div>
       ) : (
         <p className="mt-4 text-sm text-gray-600">
-          Arquivo da receita não disponível para visualização.
+          Arquivo do documento não disponível para visualização.
         </p>
       )}
     </div>

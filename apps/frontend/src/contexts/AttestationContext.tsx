@@ -27,6 +27,9 @@ export type AttestationData = {
   legalRepresentative: string;
   legalRepresentativeCpf: string;
   signatureStyle: string;
+  useCustomDate: boolean;
+  customIssueDateTime: string;
+  customStartDate: string;
 };
 
 export function resolveSignatureImage(signatureStyle: string, templateId: string): string {
@@ -73,6 +76,9 @@ const initialState: AttestationData = {
   legalRepresentative: '',
   legalRepresentativeCpf: '',
   signatureStyle: 'auto',
+  useCustomDate: false,
+  customIssueDateTime: '',
+  customStartDate: '',
 };
 
 // Criamos o contexto com um valor padrão
